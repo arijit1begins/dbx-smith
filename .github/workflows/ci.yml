@@ -1,0 +1,34 @@
+name: DbxSmith CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: './bin'
+          additional_files: 'src/dbx-smith.sh'
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Podman & Distrobox
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+          curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
+      
+      - name: Run Strategy Tests
+        run: ./test_strategies.sh
+        env:
+          PREFIX: ${{ github.workspace }}/.local

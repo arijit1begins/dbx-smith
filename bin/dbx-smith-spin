@@ -1,0 +1,221 @@
+#!/usr/bin/env bash
+# dbx-smith-spin - The CLI Factory/Provisioner / DbxSmith
+
+readonly VERSION="7.2.0"
+readonly HOME_BASE="${HOME}/boxes"
+readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
+readonly ALIAS_DIR="${CONFIG_DIR}/aliases.d"
+readonly REG_DIR="${CONFIG_DIR}/registry"
+readonly OSC_BG_SET="\033]11;"
+
+usage() {
+    cat <<EOF
+Usage: dbx-smith-spin [options] [strategy] [name] [image] [alias] [bindkey]
+
+Strategies:
+  standard      Frictionless, host-mirrored daily driver environment.
+  airgapped     Zero-network vault with an isolated, private home directory.
+  ghost         Identity obfuscation running as a transient user ('ghostuser').
+  isolated-net  Secure sandbox with a dedicated, host-blind NAT bridge network.
+
+Arguments:
+  name          Unique identifier for your Distrobox container.
+  image         Container image to use (e.g., docker.io/library/alpine).
+  alias         (Optional) Shell alias to bind (e.g., 'vault').
+  bindkey       (Optional) Zsh/Bash hotkey to bind (e.g., '^G').
+
+Options:
+  -h, --help    Show this comprehensive help message
+  -v, --version Show the current dbx-smith-spin version
+EOF
+}
+
+_bootstrap() {
+    mkdir -p "$HOME_BASE" "$ALIAS_DIR" "$REG_DIR"
+    
+    # Prerequisite Check: Distrobox
+    if ! command -v distrobox >/dev/null 2>&1; then
+        echo "Error: 'distrobox' is not installed. DbxSmith requires distrobox to operate." >&2
+        echo "You can install it using: curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sh" >&2
+        read -r -p "Would you like to attempt automatic installation? (y/N): " choice
+        if [[ "$choice" =~ ^[Yy]$ ]]; then
+            curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sh || { echo "Auto-install failed. Please install distrobox manually."; exit 1; }
+        else
+            exit 127
+        fi
+    fi
+
+    for cmd in podman cksum awk grep printf id; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            echo "Error: Required command '$cmd' not found." >&2
+            exit 127
+        fi
+    done
+}
+
+_get_color() {
+    local img="$1"
+    # Deterministic 100% hash-derived color via cksum
+    local hash
+    hash=$(echo "$img" | cksum | awk '{print $1}')
+    printf "#%02x%02x%02x" $(( (hash % 40) + 15 )) $(( ((hash / 100) % 40) + 15 )) $(( ((hash / 10000) % 40) + 15 ))
+}
+
+_register_shortcuts() {
+    local name="$1"
+    local usr_alias="$2"
+    local usr_bind="$3"
+    local fragment="$ALIAS_DIR/${name}.sh"
+
+    > "$fragment"
+    
+    if [[ -n "$usr_alias" ]]; then
+        echo "alias ${usr_alias}=\"dbx-smith ${name}\"" >> "$fragment"
+    fi
+
+    if [[ -n "$usr_bind" ]]; then
+        cat << EOF >> "$fragment"
+# Dynamic Hotkey Binding
+if [[ -n "\${ZSH_VERSION:-}" ]]; then
+    _dbx_jump_${name}() { BUFFER="dbx-smith ${name}"; zle accept-line; }
+    zle -N _dbx_jump_${name}
+    bindkey '${usr_bind}' _dbx_jump_${name}
+elif [[ -n "\${BASH_VERSION:-}" ]]; then
+    bind -x '"${usr_bind}":"dbx-smith ${name}"'
+fi
+EOF
+    fi
+
+    if [[ ! -s "$fragment" ]]; then
+        rm -f "$fragment"
+    fi
+}
+
+_write_manifest() {
+    local name="$1"
+    local strategy="$2"
+    local image="$3"
+    local manifest="$REG_DIR/${name}.conf"
+    
+    cat <<EOF > "$manifest"
+NAME=$name
+STRATEGY=$strategy
+IMAGE=$image
+CREATED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+EOF
+}
+
+main() {
+    set -euo pipefail
+    trap 'echo -e "\nCreation interrupted."; exit 130' INT TERM
+
+    case "${1:-}" in
+        -h|--help) usage; exit 0 ;;
+        -v|--version) echo "dbx-smith-spin v$VERSION"; exit 0 ;;
+    esac
+
+    _bootstrap
+
+    local strategy name image usr_alias usr_bind
+
+    if [[ $# -eq 0 ]]; then
+        while [[ -z "${strategy:-}" ]]; do
+            read -r -p "Strategy (standard/airgapped/ghost/isolated-net): " strategy || exit 130
+        done
+        while [[ -z "${name:-}" ]]; do
+            read -r -p "Box Name: " name || exit 130
+        done
+        while [[ -z "${image:-}" ]]; do
+            read -r -p "Image: " image || exit 130
+        done
+        read -r -p "Alias (optional): " usr_alias || exit 130
+        read -r -p "Bindkey (optional, e.g. ^G): " usr_bind || exit 130
+    else
+        strategy="$1"
+        name="${2:-}"
+        image="${3:-}"
+        usr_alias="${4:-}"
+        usr_bind="${5:-}"
+    fi
+
+    if [[ -z "$name" || -z "$image" || -z "$strategy" ]]; then
+        echo "Error: Missing required arguments." >&2
+        usage >&2
+        exit 1
+    fi
+
+    # Exact-match duplicate guard using default whitespace tokenization
+    if distrobox list --no-color | awk -v n="$name" 'NR>1 && $3==n {found=1} END {exit !found}'; then
+        echo "Error: Distrobox '$name' already exists." >&2
+        exit 1
+    fi
+
+    local color
+    color=$(_get_color "$image")
+    
+    local script_payload
+    script_payload=$(cat <<EOF
+mkdir -p /etc/profile.d /etc/zsh
+cat << 'INNER_EOF' > /etc/profile.d/dbx-smith-env.sh
+echo -ne '${OSC_BG_SET}${color}\007'
+if [ -n "\${ZSH_VERSION:-}" ]; then
+    export PS1="%F{cyan}($name)%f %F{green}%n@%m%f:%F{blue}%~%f\$ "
+else
+    export PS1="\[\033[36m\]($name)\[\033[0m\] \[\033[32m\]\u@\h\[\033[0m\]:\[\033[34m\]\w\[\033[0m\]\\$ "
+fi
+INNER_EOF
+echo 'source /etc/profile.d/dbx-smith-env.sh' >> /etc/zsh/zshrc
+EOF
+)
+    local payload
+    payload=$(echo "$script_payload" | base64 | tr -d '\n')
+    local init_hook="echo $payload | base64 -d | sh"
+    
+    local dbx_flags=(--name "$name" --image "$image")
+
+    case "$strategy" in
+        standard)
+            dbx_flags+=(--init-hooks "$init_hook")
+            ;;
+        airgapped)
+            podman network inspect "dbx-tmp-${name}" >/dev/null 2>&1 || podman network create "dbx-tmp-${name}" >/dev/null
+            dbx_flags+=(--home "$HOME_BASE/$name" --unshare-all --additional-flags "--network dbx-tmp-${name}" --init-hooks "$init_hook")
+            ;;
+        ghost)
+            local ghost_hook
+            ghost_hook="id ghostuser &>/dev/null || (useradd -m ghostuser && usermod -aG wheel ghostuser 2>/dev/null || true && usermod -aG sudo ghostuser 2>/dev/null || true); $init_hook"
+            dbx_flags+=(--hostname "ghost-shell" --init-hooks "$ghost_hook")
+            ;;
+        isolated-net)
+            # Create podman network if missing
+            podman network inspect "dbx-net-${name}" >/dev/null 2>&1 || podman network create "dbx-net-${name}" >/dev/null
+            dbx_flags+=(--home "$HOME_BASE/$name" --unshare-netns --additional-flags "--network dbx-net-${name}" --init-hooks "$init_hook")
+            ;;
+        *)
+            echo "Error: Unknown strategy '$strategy'." >&2
+            exit 1
+            ;;
+    esac
+
+    echo "Creating distrobox '$name' ($image) using strategy '$strategy'..."
+    distrobox create "${dbx_flags[@]}"
+    
+    if [[ "$strategy" == "airgapped" ]]; then
+        echo "Airgapped strategy detected. Bootstrapping container with temporary internet access..."
+        # Force distrobox to perform its first-run package installation
+        distrobox enter "$name" -- true
+        
+        echo "Severing all network bridges to fully airgap the container..."
+        # Disconnect and destroy the throwaway network
+        podman network disconnect "dbx-tmp-${name}" "$name" >/dev/null 2>&1 || true
+        podman network rm "dbx-tmp-${name}" >/dev/null 2>&1 || true
+        echo "Container '$name' is now strictly offline."
+    fi
+
+    _write_manifest "$name" "$strategy" "$image"
+    _register_shortcuts "$name" "${usr_alias:-}" "${usr_bind:-}"
+    
+    echo "Successfully provisioned '$name'."
+}
+
+main "$@"

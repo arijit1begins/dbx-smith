@@ -1,0 +1,12 @@
+dbx-smith:
+  label: DbxSmith
+  description: All posts related to the DbxSmith suite.
+distrobox:
+  label: Distrobox
+  description: Posts about Distrobox management and tips.
+containers:
+  label: Containers
+  description: General container technology and dev environments.
+security:
+  label: Security
+  description: Security strategies and airgapped development.

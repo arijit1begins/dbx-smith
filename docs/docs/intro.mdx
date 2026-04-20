@@ -1,0 +1,45 @@
+---
+sidebar_position: 1
+---
+
+# Introduction to DbxSmith
+
+Welcome to **DbxSmith**, the professional-grade forge for isolated developer environments.
+
+DbxSmith is built on top of [Distrobox](https://distrobox.it) and Podman, providing a modular, secure, and highly productive suite for developers who need strict isolation, airgapped security, or zero-configuration drift.
+
+## Key Philosophies
+
+- **Idempotent & Self-Healing**: DbxSmith automatically repairs missing infrastructure during provisioning.
+- **Strict Isolation**: Our "Airgapped" strategy ensures zero-persistent-network access for sensitive development.
+- **Cross-Shell Consistency**: Native support for Bash and Zsh with unified completion and hotkey systems.
+- **Zero Drift**: Atomic teardowns ensure no artifacts (containers, volumes, or aliases) are left behind.
+
+## Quick Start
+
+### 1. Install DbxSmith
+```bash
+curl -fsSL https://raw.githubusercontent.com/arijit1begins/dbx-smith/main/install.sh | bash
+```
+
+### 2. Provision Your First Environment
+Create a standard Ubuntu-based developer environment:
+```bash
+dbx-smith-spin standard devbox docker.io/library/ubuntu:latest dev
+```
+
+### 3. Enter the Smithy
+Jump into your new environment immediately:
+```bash
+dbx-smith devbox
+```
+
+## Key Features
+Explore the power of DbxSmith:
+- **Strategic Provisioning**: Standard, Airgapped, Ghost, and Isolated-Net strategies.
+- **Modular Manifests**: Deterministic state management for all your boxes.
+- **Secure Networking**: Advanced bridge isolation and destruction.
+
+:::tip
+DbxSmith requires **Distrobox** and **Podman** to be installed on your host system. If Distrobox is missing, the installer will offer to set it up for you!
+:::
