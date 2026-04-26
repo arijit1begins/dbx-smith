@@ -168,8 +168,8 @@ echo 'source /etc/profile.d/dbx-smith-env.sh' >> /etc/zsh/zshrc
 EOF
 )
     local payload
-    payload=$(echo "$script_payload" | base64 | tr -d '\n')
-    local init_hook="echo $payload | base64 -d | sh"
+    payload=$(printf "%s" "$script_payload" | base64 | tr -d '\n')
+    local init_hook="echo '$payload' | base64 -d | sh"
     
     local dbx_flags=(--name "$name" --image "$image")
 

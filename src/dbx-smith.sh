@@ -1,7 +1,8 @@
-# dbe.sh - DbxSmith Runtime Core (Bash/Zsh Compatible)
+#!/usr/bin/env bash
+# dbx-smith.sh - DbxSmith Runtime Core (Bash/Zsh Compatible)
 
 dbx-smith() {
-    local box="$1" target=""
+    local box="$1"
     [[ -z "$box" ]] && { echo "usage: dbx-smith <box_name> [args...]"; return 1; }
 
     # Pre-flight existence validation using awk's default whitespace tokenization ($3 is NAME)
@@ -14,16 +15,19 @@ dbx-smith() {
 
     # Read manifest if exists to determine if it is a ghost strategy
     local REG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith/registry"
+    local enter_args=()
     if [[ -f "$REG_DIR/${box}.conf" ]]; then
         if grep -q "STRATEGY=ghost" "$REG_DIR/${box}.conf"; then
-            target="--user ghostuser"
+            enter_args+=(--user ghostuser)
         fi
     else
         # Fallback heuristic
-        podman exec "$box" grep -q "ghostuser" /etc/passwd 2>/dev/null && target="--user ghostuser"
+        if podman exec "$box" grep -q "ghostuser" /etc/passwd 2>/dev/null; then
+            enter_args+=(--user ghostuser)
+        fi
     fi
 
-    distrobox enter $target "$box" "${@:2}"
+    distrobox enter "${enter_args[@]}" "$box" "${@:2}"
     
     # Deterministic explicitly colored UI reset (black fallback)
     printf '\033]11;#000000\007'

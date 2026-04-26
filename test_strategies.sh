@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd .
+# Ensure binaries are in PATH
+export PATH="${PREFIX:-$HOME/.local}/bin:$PATH"
+
 make install >/dev/null
 
 echo "========================================"
