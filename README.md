@@ -1,9 +1,10 @@
 # DbxSmith
 
-![CI/CD](https://img.shields.io/github/actions/workflow/status/arijit1begins/dbx-smith/ci.yml?branch=main&label=CI%2FCD&style=flat-square)
-![Release](https://img.shields.io/github/v/release/arijit1begins/dbx-smith?style=flat-square)
-![License](https://img.shields.io/github/license/arijit1begins/dbx-smith?style=flat-square)
+![CI/CD](https://github.com/arijit1begins/dbx-smith/actions/workflows/ci.yml/badge.svg)
+![Release](https://img.shields.io/badge/release-v1.0.0-blue?style=flat-square)
+![License](https://img.shields.io/badge/license-Apache_2.0-green?style=flat-square)
 ![CNCF Sandbox](https://img.shields.io/badge/CNCF-Sandbox_Pending-blue?style=flat-square)
+
 
 A highly modular, professional-grade Developer Productivity Suite built on top of Distrobox and Podman. Designed with strict adherence to Linux standards, this suite provides instant, ephemeral, or persistent isolated environments directly accessible from your shell (Bash and Zsh).
 
