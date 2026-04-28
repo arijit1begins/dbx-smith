@@ -5,16 +5,36 @@ set -euo pipefail
 
 echo "Installing DbxSmith Productivity Suite..."
 
+for cmd in curl tar; do
+    if ! command -v "$cmd" >/dev/null 2>&1; then
+        echo "Error: Required command '$cmd' not found. Please install it to proceed." >&2
+        exit 127
+    fi
+done
+
 PREFIX="${PREFIX:-$HOME/.local}"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
 
 if [[ -f "Makefile" && -d "bin" && -d "src" ]]; then
     echo "Local repository detected. Installing from current directory..."
 else
-    echo "Cloning DbxSmith repository..."
+    echo "Fetching latest stable release..."
+    LATEST_TAG=$(curl -s https://api.github.com/repos/arijit1begins/dbx-smith/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    
+    if [[ -z "$LATEST_TAG" ]]; then
+        echo "Warning: Could not detect latest release tag. Falling back to main branch..."
+        DOWNLOAD_URL="https://github.com/arijit1begins/dbx-smith/archive/refs/heads/main.tar.gz"
+        LATEST_TAG="main"
+    else
+        echo "Found release: $LATEST_TAG"
+        DOWNLOAD_URL="https://github.com/arijit1begins/dbx-smith/archive/refs/tags/${LATEST_TAG}.tar.gz"
+    fi
+
     TMP_DIR=$(mktemp -d)
     trap 'rm -rf "$TMP_DIR"' EXIT
-    git clone --quiet "https://github.com/arijit1begins/dbx-smith.git" "$TMP_DIR"
+    
+    echo "Downloading DbxSmith $LATEST_TAG..."
+    curl -sL "$DOWNLOAD_URL" | tar xz -C "$TMP_DIR" --strip-components=1
     cd "$TMP_DIR"
 fi
 
