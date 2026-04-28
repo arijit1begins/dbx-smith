@@ -1,24 +1,42 @@
 # DbxSmith Documentation Site
 
-This directory contains the source code for the DbxSmith documentation and blog, built using [Docusaurus](https://docusaurus.io/).
+This directory contains the source code for the DbxSmith documentation and blog, built using [Docusaurus 3](https://docusaurus.io/).
 
-## Local Development
+## 🛠️ Local Development
 
-To start the documentation server locally:
+### Prerequisites
+- **Node.js**: >= 20.0 (Matches CI environment)
+- **npm**: Standard with Node.js
 
+### Commands
 ```bash
+# Install dependencies
 npm install
+
+# Start the development server
 npm start
 ```
+By default, the site will be served at `http://localhost:3000/dbx-smith/`.
 
-This will serve the site at `http://localhost:3000/dbx-smith/`.
+## 📁 File Structure
+- `docs/`: Markdown files for the technical documentation.
+- `blog/`: Markdown files for the announcement and update posts.
+- `src/`: Custom React components and styling.
+- `static/`: Images, icons, and other static assets.
 
-## Build & Deployment
+## 📊 Features
+- **Mermaid Diagrams**: We have built-in support for Mermaid. Use ` ```mermaid ` code blocks in your markdown.
+- **Search**: Fully searchable content (once indexed by search engines).
+- **Responsive Design**: Optimized for mobile and desktop viewing.
 
-To build the static site:
-
+## 🚀 Build & Deployment
+The build process generates a static `build/` directory:
 ```bash
 npm run build
 ```
 
-Deployment is handled automatically by GitHub Actions upon pushing to the `main` branch.
+**Automated Deployment**:
+You do not need to deploy manually. The [`.github/workflows/deploy-docs.yml`](../.github/workflows/deploy-docs.yml) workflow automatically:
+1. Triggers on any push to `main` that modifies the `docs/` folder.
+2. Builds the site using Node 20.
+3. Deploys the result to the `gh-pages` branch.

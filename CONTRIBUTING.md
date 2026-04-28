@@ -64,13 +64,12 @@ We use **Semantic Release**. Please follow the [Conventional Commits](https://ww
 Our workflows are located in `.github/workflows/` and ensure code quality and automated delivery:
 - **`ci.yml` (Continuous Integration)**: 
   - Runs **ShellCheck** on all binaries and core scripts.
-  - Executes **`test_strategies.sh`**, which spins up real containers to validate all isolation strategies (`standard`, `airgapped`, etc.).
+  - Executes **`test_strategies.sh`**, which spins up real containers to validate all isolation strategies.
   - Triggered on every Push and Pull Request.
 - **`deploy-docs.yml` (Documentation Deployment)**:
-  - Triggered by changes in the `/docs` directory.
-  - Automatically builds the Docusaurus site and deploys it to GitHub Pages.
+  - Automatically builds and deploys the Docusaurus site to GitHub Pages.
+  - **Manual Trigger**: Can be run manually via the "Actions" tab using `workflow_dispatch`.
 - **`release.yml` (Automated Release)**:
-  - Triggered on every push to the `main` branch.
   - Uses `semantic-release` to analyze commits, generate changelogs, and publish new GitHub Releases.
 
 ### Commit Guidelines & Release Triggers
@@ -78,13 +77,17 @@ Since we use automated versioning, your commit prefix determines if a new versio
 - **Triggers a Release**: `feat:` (Minor), `fix:` (Patch), `BREAKING CHANGE:` (Major).
 - **Does NOT Trigger a Release**: `docs:`, `chore:`, `ci:`, `style:`, `refactor:`, `test:`.
 
-> [!IMPORTANT]
-> If you are modifying internal CI/CD YAML files or scripts that don't affect the end-user, please use the `ci:` or `chore:` prefix. Avoid using `fix:` for infrastructure changes unless they fix a bug in the shipped software itself.
+### Troubleshooting CI/CD
+- **Divergent Branches**: If the automated release bot commits to `main` while you are working locally, use `git pull --rebase` to sync.
+- **Node.js Versions**: We use Node 20 for documentation and Node 24 for certain internal actions. Ensure your local environment is at least on Node 20.
+- **ShellCheck Warnings**: The CI will fail if ShellCheck finds issues. Run `shellcheck bin/* src/*.sh` locally before pushing.
 
 ### Testing Locally
 Before submitting a PR, please run the following:
 1. **Linting**: `shellcheck bin/* src/*.sh`
 2. **Strategy Tests**: `./test_strategies.sh` (Requires `podman` and `distrobox` installed on your host).
+3. **Docs Build**: `cd docs && npm run build`
+
 ## Questions?
 Feel free to open a Discussion on GitHub!
 
