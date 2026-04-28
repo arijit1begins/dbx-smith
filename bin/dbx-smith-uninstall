@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Quick uninstall script for the DbxSmith Productivity Suite
+
+set -euo pipefail
+
+echo "Uninstalling DbxSmith Productivity Suite..."
+
+PREFIX="${PREFIX:-$HOME/.local}"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
+BIN_DIR="$PREFIX/bin"
+
+echo "Removing executables..."
+rm -f "$BIN_DIR/dbx-smith-spin"
+rm -f "$BIN_DIR/dbx-smith-rm"
+rm -f "$BIN_DIR/dbx-smith-uninstall"
+
+echo "Removing configuration directory..."
+rm -rf "$CONFIG_DIR"
+
+RC_FILE=""
+if [[ -n "${ZSH_VERSION:-}" || "$SHELL" == *zsh ]]; then
+    RC_FILE="$HOME/.zshrc"
+elif [[ -n "${BASH_VERSION:-}" || "$SHELL" == *bash ]]; then
+    RC_FILE="$HOME/.bashrc"
+fi
+
+if [[ -n "$RC_FILE" && -f "$RC_FILE" ]]; then
+    if grep -q "source $CONFIG_DIR/dbx-smith.sh" "$RC_FILE" 2>/dev/null; then
+        echo "Removing shell injection from $RC_FILE..."
+        TEMP_FILE=$(mktemp)
+        # Remove both the comment line and the source line
+        grep -v "# DbxSmith Productivity Suite Runtime Core" "$RC_FILE" | grep -v "source $CONFIG_DIR/dbx-smith.sh" > "$TEMP_FILE" || true
+        cat "$TEMP_FILE" > "$RC_FILE"
+        rm -f "$TEMP_FILE"
+        echo "Successfully cleaned $RC_FILE."
+    fi
+fi
+
+echo ""
+echo "=========================================================="
+echo "Uninstall complete!"
+echo "If you have any active boxes, they have not been touched."
+echo "You can manage or remove them manually via distrobox and podman."
+echo "=========================================================="

@@ -8,6 +8,16 @@ echo "Installing DbxSmith Productivity Suite..."
 PREFIX="${PREFIX:-$HOME/.local}"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
 
+if [[ -f "Makefile" && -d "bin" && -d "src" ]]; then
+    echo "Local repository detected. Installing from current directory..."
+else
+    echo "Cloning DbxSmith repository..."
+    TMP_DIR=$(mktemp -d)
+    trap 'rm -rf "$TMP_DIR"' EXIT
+    git clone --quiet "https://github.com/arijit1begins/dbx-smith.git" "$TMP_DIR"
+    cd "$TMP_DIR"
+fi
+
 make install PREFIX="$PREFIX" CONFIG_DIR="$CONFIG_DIR"
 
 RC_FILE=""

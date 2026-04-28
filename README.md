@@ -26,5 +26,5 @@ After installation, follow the on-screen instructions to source the runtime in y
 ## Uninstallation
 
 ```bash
-make uninstall
+dbx-smith-uninstall
 ```

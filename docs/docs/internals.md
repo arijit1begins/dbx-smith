@@ -13,7 +13,7 @@ This document is for developers contributing to or extending DbxSmith. It covers
 | Path | Category | Description |
 | :--- | :--- | :--- |
 | `install.sh` | **Entrypoint** | Quick-start installer and shell injector. |
-| `bin/` | **Executables** | CLI tools: `dbx-smith-spin` and `dbx-smith-rm`. |
+| `bin/` | **Executables** | CLI tools: `dbx-smith-spin`, `dbx-smith-rm`, and `dbx-smith-uninstall`. |
 | `src/` | **Runtime** | `dbx-smith.sh` — shell-integrated core logic, completions, alias loader. |
 | `internal/` | **Metadata** | Design docs and templates (not shipped to users). |
 | `docs/` | **Docs Site** | Docusaurus source for the public documentation. |
@@ -23,7 +23,7 @@ This document is for developers contributing to or extending DbxSmith. It covers
 
 | Layer | Path | Content |
 | :--- | :--- | :--- |
-| **Execution** | `~/.local/bin/` | `dbx-smith-spin`, `dbx-smith-rm` |
+| **Execution** | `~/.local/bin/` | `dbx-smith-spin`, `dbx-smith-rm`, `dbx-smith-uninstall` |
 | **Persistence** | `~/.config/dbx-smith/` | `dbx-smith.sh`, `registry/`, `aliases.d/` |
 | **Shell** | `~/.bashrc` or `~/.zshrc` | `source ~/.config/dbx-smith/dbx-smith.sh` |
 

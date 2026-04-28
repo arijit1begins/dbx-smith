@@ -4,7 +4,7 @@ CONFIG_DIR ?= $(HOME)/.config/dbx-smith
 BIN_DIR = $(PREFIX)/bin
 SRC_DIR = $(CONFIG_DIR)
 
-SCRIPTS = bin/dbx-smith-spin bin/dbx-smith-rm
+SCRIPTS = bin/dbx-smith-spin bin/dbx-smith-rm bin/dbx-smith-uninstall
 CORE = src/dbx-smith.sh
 
 .PHONY: all install uninstall
@@ -34,6 +34,7 @@ uninstall:
 	@echo "Removing executables..."
 	rm -f $(BIN_DIR)/dbx-smith-spin
 	rm -f $(BIN_DIR)/dbx-smith-rm
+	rm -f $(BIN_DIR)/dbx-smith-uninstall
 	
 	@echo "Removing config directory..."
 	rm -rf $(SRC_DIR)
