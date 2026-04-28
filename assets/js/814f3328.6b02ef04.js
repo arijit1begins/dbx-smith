@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([["1833"],{5513(e){e.exports=JSON.parse('{"title":"Recent posts","items":[{"title":"Announcing DbxSmith - The Forge for Isolated Environments","permalink":"/dbx-smith/blog/announcing-dbx-smith","unlisted":false,"date":"2026-04-20T00:00:00.000Z"}]}')}}]);
