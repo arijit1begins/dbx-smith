@@ -1,0 +1,44 @@
+name: Blog Notification
+
+on:
+  push:
+    paths:
+      - 'docs/blog/**'
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Get latest blog post
+        id: get_post
+        run: |
+          NEW_FILE=$(git diff --name-only HEAD^ HEAD | grep 'docs/blog/' | head -n 1)
+          if [ -z "$NEW_FILE" ]; then
+            echo "No new blog post found."
+            exit 0
+          fi
+          TITLE=$(grep '^title: ' "$NEW_FILE" | sed 's/title: //')
+          SLUG=$(grep '^slug: ' "$NEW_FILE" | sed 's/slug: //')
+          echo "title=$TITLE" >> $GITHUB_OUTPUT
+          echo "url=https://arijit1begins.github.io/dbx-smith/blog/$SLUG" >> $GITHUB_OUTPUT
+
+      - name: Notify Discord
+        if: steps.get_post.outputs.title != ''
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK" ]; then
+            echo "DISCORD_WEBHOOK secret not set. Skipping notification."
+            exit 0
+          fi
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"🚀 **New Blog Post Published!**\n\n**${{ steps.get_post.outputs.title }}**\nRead more here: ${{ steps.get_post.outputs.url }}\"}" \
+               $DISCORD_WEBHOOK

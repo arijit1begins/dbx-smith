@@ -38,6 +38,26 @@ export default function Home(): ReactNode {
       description="DbxSmith: The Forge for Professional-Grade Isolated Developer Environments built on Distrobox and Podman.">
       <HomepageHeader />
       <main>
+        <section className="featured-blog-section">
+          <div className="container">
+            <Heading as="h2" className="text--center margin-bottom--lg">Latest from the Forge</Heading>
+            <Link to="/blog/introducing-dbx-smith-v1" className="featured-blog-card">
+              <div 
+                className="featured-blog-image" 
+                style={{backgroundImage: 'url(/dbx-smith/img/dbx-smith-v1-hero.png)'}}
+              />
+              <div className="featured-blog-content">
+                <span className="featured-blog-tag">Official Launch</span>
+                <Heading as="h3">Introducing DbxSmith v1.0.0</Heading>
+                <p>
+                  Read about our journey in building the ultimate provisioning suite for isolated developer environments. 
+                  Learn about our modular manifests and airgapped strategies.
+                </p>
+                <span className="button button--outline button--primary">Read Article →</span>
+              </div>
+            </Link>
+          </div>
+        </section>
         <HomepageFeatures />
       </main>
     </Layout>

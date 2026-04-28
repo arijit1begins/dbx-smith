@@ -159,6 +159,14 @@ const config: Config = {
               label: 'X (Twitter)',
               href: 'https://x.com/arijit1begins',
             },
+            {
+              label: 'RSS Feed',
+              to: '/blog/rss.xml',
+            },
+            {
+              label: 'Atom Feed',
+              to: '/blog/atom.xml',
+            },
           ],
         },
       ],

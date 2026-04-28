@@ -3,7 +3,11 @@ slug: introducing-dbx-smith-v1
 title: Introducing DbxSmith - The Forge for Isolated Developer Environments
 authors: [arijit1begins]
 tags: [launch, v1.0, distrobox, security]
+image: /img/dbx-smith-v1-hero.png
 ---
+
+![DbxSmith v1.0 Launch Hero](/img/dbx-smith-v1-hero.png)
+
 
 Today, we are officially launching **DbxSmith**, a professional-grade provisioning suite for **Distrobox** and **Podman**. 
 
