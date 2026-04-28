@@ -55,13 +55,21 @@ dbx-smith-rm --purge devbox
 
 See [Strategies](./strategies.md) for full details, technical breakdowns, and example commands.
 
+## Supported Platforms
+
+DbxSmith is built for the Linux ecosystem. It relies on low-level kernel features (namespaces, cgroups) exposed by Podman and Distrobox.
+
+- **✅ Supported**: All major Linux distributions (Fedora, Ubuntu, Debian, Arch, OpenSUSE, etc.)
+- **❌ Unsupported**: macOS and Windows. 
+    - *Note for Mac users*: Distrobox does not run natively on macOS. While you can run DbxSmith inside a Linux VM on Mac, the host-integration features (like shared home paths) will be limited to the VM environment.
+
 <div className="admonition admonition-tip alert alert--success">
 <div className="admonition-heading">
 <h5>💡 PREREQUISITES</h5>
 </div>
 <div className="admonition-content">
 
-DbxSmith requires **Distrobox** and **Podman**. If Distrobox is missing, the installer will detect this and offer to set it up automatically.
+DbxSmith requires **Linux**, **Distrobox**, and **Podman**. If Distrobox is missing on your Linux host, the installer will detect this and offer to set it up automatically.
 
 </div>
 </div>

@@ -11,6 +11,12 @@ A professional-grade provisioning and management suite for **<a href="https://di
 📰 **[Read our Blog →](https://arijit1begins.github.io/dbx-smith/blog)**  
 📡 **[RSS Feed](https://arijit1begins.github.io/dbx-smith/blog/rss.xml)**
 
+## Compatibility
+
+- **Supported OS**: Linux (Agnostic - Fedora, Ubuntu, Arch, etc.)
+- **Unsupported**: macOS, Windows (WSL2 may work but is not officially supported)
+- **Dependencies**: Distrobox, Podman (or Docker)
+
 ## Installation
 
 ```bash
