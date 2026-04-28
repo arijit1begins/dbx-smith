@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 # dbx-smith.sh - DbxSmith Runtime Core (Bash/Zsh Compatible)
+#
+# DESCRIPTION:
+#   The core runtime sourced by the user's shell. It provides the `dbx-smith`
+#   entrypoint function, lazy-loaded autocomplete, and dynamic sourcing of
+#   container aliases and keybindings.
 
 dbx-smith() {
     local box="$1"

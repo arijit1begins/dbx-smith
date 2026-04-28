@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+# test_strategies.sh - Automated Integration Tests / DbxSmith
+#
+# DESCRIPTION:
+#   Runs automated integration tests for each container strategy, ensuring that
+#   networking, profiling, and lifecycle commands (spin, rm) work properly.
 set -euo pipefail
 
 # Ensure binaries are in PATH

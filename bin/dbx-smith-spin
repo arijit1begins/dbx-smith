@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 # dbx-smith-spin - The CLI Factory/Provisioner / DbxSmith
+#
+# DESCRIPTION:
+#   Automates the provisioning of Distrobox containers under various isolation strategies
+#   (standard, airgapped, ghost, isolated-net). Generates custom profiles, networking,
+#   and dynamic shell integrations.
 
 readonly VERSION="1.1.0"
 readonly HOME_BASE="${HOME}/boxes"
@@ -27,6 +32,9 @@ Arguments:
 Options:
   -h, --help    Show this comprehensive help message
   -v, --version Show the current dbx-smith-spin version
+
+For more detailed information and examples, refer to the manual:
+  man dbx-smith-spin
 EOF
 }
 

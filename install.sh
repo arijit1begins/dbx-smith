@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 # Quick install script for the DbxSmith Productivity Suite
+#
+# DESCRIPTION:
+#   Downloads and installs the latest release of the DbxSmith suite.
+#   It sets up the correct paths and hooks the source script into the shell profile.
 
 set -euo pipefail
 

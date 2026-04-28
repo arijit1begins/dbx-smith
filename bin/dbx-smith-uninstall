@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 # Quick uninstall script for the DbxSmith Productivity Suite
+#
+# DESCRIPTION:
+#   Safely removes the DbxSmith productivity suite from the host machine.
+#   Cleans up the installation directory, configurations, and shell rc injections.
 
 set -euo pipefail
 
@@ -13,6 +17,10 @@ echo "Removing executables..."
 rm -f "$BIN_DIR/dbx-smith-spin"
 rm -f "$BIN_DIR/dbx-smith-rm"
 rm -f "$BIN_DIR/dbx-smith-uninstall"
+
+echo "Removing man pages..."
+rm -f "$PREFIX/share/man/man1/dbx-smith-spin.1"
+rm -f "$PREFIX/share/man/man1/dbx-smith-rm.1"
 
 echo "Removing configuration directory..."
 rm -rf "$CONFIG_DIR"

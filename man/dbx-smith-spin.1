@@ -1,0 +1,77 @@
+.TH DBX-SMITH-SPIN 1 "April 2026" "DbxSmith" "User Manual"
+.SH NAME
+dbx-smith-spin \- CLI factory and provisioner for DbxSmith
+.SH SYNOPSIS
+.B dbx-smith-spin
+[options] [strategy] [name] [image] [alias] [bindkey]
+.br
+
+.B --help/-h:
+show this comprehensive help message
+.br
+.B --version/-v:
+show the current dbx-smith-spin version
+.br
+
+.B Strategies:
+.br
+.B standard:
+Frictionless, host-mirrored daily driver environment.
+.br
+.B airgapped:
+Zero-network vault with an isolated, private home directory.
+.br
+.B ghost:
+Identity obfuscation running as a transient user ('ghostuser').
+.br
+.B isolated-net:
+Secure sandbox with a dedicated, host-blind NAT bridge network.
+.br
+
+.B Arguments:
+.br
+.B name:
+Unique identifier for your Distrobox container.
+.br
+.B image:
+Container image to use (e.g., docker.io/library/alpine).
+.br
+.B alias:
+(Optional) Shell alias to bind (e.g., 'vault').
+.br
+.B bindkey:
+(Optional) Zsh/Bash hotkey to bind (e.g., '^G').
+.SH DESCRIPTION
+.B dbx-smith-spin
+is the CLI factory and provisioner for the DbxSmith productivity suite. It automates the creation of Distrobox containers using predefined security and isolation strategies. It configures the containers, applies custom UI coloring based on the image, and automatically generates shell aliases and keybindings for quick access.
+.SH EXAMPLES
+Provision a standard container with alpine linux:
+.br
+
+	dbx-smith-spin standard my-alpine alpine:latest
+.br
+
+Provision an airgapped vault container with an alias 'vault' and bindkey '^V':
+.br
+
+	dbx-smith-spin airgapped my-vault alpine:latest vault ^V
+.br
+
+Provision an isolated-network container for testing:
+.br
+
+	dbx-smith-spin isolated-net my-sandbox fedora:latest
+.br
+
+Provision a ghost container for transient tasks:
+.br
+
+	dbx-smith-spin ghost my-ghost ubuntu:latest
+.br
+
+.SH ENVIRONMENT VARIABLES
+.B XDG_CONFIG_HOME
+.br
+.B ZSH_VERSION
+.br
+.B BASH_VERSION

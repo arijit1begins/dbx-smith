@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 # dbx-smith-rm - The Atomic Destructor / DbxSmith
+#
+# DESCRIPTION:
+#   Cleanly destroys a Distrobox container along with any associated DbxSmith
+#   infrastructure including isolated home directories, podman networks, and aliases.
 
 usage() {
     echo "Usage: dbx-smith-rm [options] <box_name>"
@@ -9,6 +13,9 @@ usage() {
     echo "  -h, --help    Show this help message"
     echo "  -p, --purge   Deep clean: Purge container, isolated home dir, registry manifest,"
     echo "                shortcut fragments, isolated network bridges, and internal Podman volumes."
+    echo ""
+    echo "For more detailed information and examples, refer to the manual:"
+    echo "  man dbx-smith-rm"
 }
 
 main() {

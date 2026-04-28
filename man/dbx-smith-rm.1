@@ -1,0 +1,27 @@
+.TH DBX-SMITH-RM 1 "April 2026" "DbxSmith" "User Manual"
+.SH NAME
+dbx-smith-rm \- Atomic destructor for Distrobox containers
+.SH SYNOPSIS
+.B dbx-smith-rm
+[options] <box_name>
+.br
+
+.B --help/-h:
+show this help message
+.br
+.B --purge/-p:
+Deep clean: Purge container, isolated home dir, registry manifest, shortcut fragments, isolated network bridges, and internal Podman volumes.
+.SH DESCRIPTION
+.B dbx-smith-rm
+is the atomic destructor for Distrobox containers and their associated DbxSmith infrastructure. It ensures that when a container is removed, all corresponding artifacts—such as isolated home directories, shell aliases, registry manifests, network bridges, and podman volumes—are cleanly purged from the host system.
+.SH EXAMPLES
+Remove a container and its basic configuration:
+.br
+
+	dbx-smith-rm my-alpine
+.br
+
+Perform a deep purge of a container, including all volumes and network bridges:
+.br
+
+	dbx-smith-rm \--purge my-vault
