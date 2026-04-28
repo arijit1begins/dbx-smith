@@ -10,3 +10,9 @@ containers:
 security:
   label: Security
   description: Security strategies and airgapped development.
+launch:
+  label: Launch
+  description: Official product and feature launches.
+v1.0:
+  label: v1.0
+  description: Updates and features related to the version 1.0 release.

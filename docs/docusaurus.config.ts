@@ -161,11 +161,11 @@ const config: Config = {
             },
             {
               label: 'RSS Feed',
-              to: '/blog/rss.xml',
+              to: 'pathname:///dbx-smith/blog/rss.xml',
             },
             {
               label: 'Atom Feed',
-              to: '/blog/atom.xml',
+              to: 'pathname:///dbx-smith/blog/atom.xml',
             },
           ],
         },
