@@ -19,7 +19,7 @@ DbxSmith uses **Strategies** as provisioning blueprints. A strategy is a named c
 
 Before running any strategy, DbxSmith requires:
 
-- **Engine**: [`distrobox`](https://distrobox.it/) and [`podman`](https://podman.io/) — if `distrobox` is missing, the installer will offer to set it up automatically.
+- **Engine**: <a href="https://distrobox.it/" target="_blank" rel="noopener noreferrer"><code>distrobox</code></a> and <a href="https://podman.io/" target="_blank" rel="noopener noreferrer"><code>podman</code></a> — if `distrobox` is missing, the installer will offer to set it up automatically.
 - **Utilities**: `cksum` (color hashing), `base64` (init-hook payload injection), `awk` / `grep` (registry parsing and container list filtering).
 
 ---

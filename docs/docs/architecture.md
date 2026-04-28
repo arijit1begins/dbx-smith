@@ -8,7 +8,7 @@ This document provides a detailed dissection of the **DbxSmith** suite, its inte
 
 ## System Overview
 
-DbxSmith operates as a wrapper and orchestration layer over **[Distrobox](https://distrobox.it/)** and **[Podman](https://podman.io/)**. It adds a stateful registry, strategic provisioning, and shell-level UI integration.
+DbxSmith operates as a wrapper and orchestration layer over **<a href="https://distrobox.it/" target="_blank" rel="noopener noreferrer">Distrobox</a>** and **<a href="https://podman.io/" target="_blank" rel="noopener noreferrer">Podman</a>**. It adds a stateful registry, strategic provisioning, and shell-level UI integration.
 
 There are three CLI tools, each owning a distinct phase of a box's lifecycle:
 
