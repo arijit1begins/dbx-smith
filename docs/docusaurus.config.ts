@@ -125,17 +125,38 @@ const config: Config = {
               label: 'Introduction',
               to: '/docs/intro',
             },
+            {
+              label: 'Architecture',
+              to: '/docs/architecture',
+            },
+            {
+              label: 'Strategies',
+              to: '/docs/strategies',
+            },
           ],
         },
         {
-          title: 'Connect',
+          title: 'Community',
+          items: [
+            {
+              label: 'GitHub Discussions',
+              href: 'https://github.com/arijit1begins/dbx-smith/discussions',
+            },
+            {
+              label: 'Issues',
+              href: 'https://github.com/arijit1begins/dbx-smith/issues',
+            },
+          ],
+        },
+        {
+          title: 'Social',
           items: [
             {
               label: 'GitHub',
               href: 'https://github.com/arijit1begins/dbx-smith',
             },
             {
-              label: 'X',
+              label: 'X (Twitter)',
               href: 'https://x.com/arijit1begins',
             },
           ],

@@ -2,7 +2,7 @@
 sidebar_position: 3
 ---
 
-# Architecture & Engineering Deep-Dive
+# Architecture Deep-Dive
 
 This document provides a detailed dissection of the **DbxSmith** suite, its internal mechanics, and how different components interact to forge isolated developer environments.
 

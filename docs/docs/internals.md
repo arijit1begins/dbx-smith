@@ -31,17 +31,31 @@ This document is for developers contributing to or extending DbxSmith. It covers
 
 ## II. Engineering Principles
 
-### 1. Idempotency — The Self-Healing Pattern
+<div className="admonition admonition-tip alert alert--success">
+<div className="admonition-heading">
+<h5>💡 IDEMPOTENCY</h5>
+</div>
+<div className="admonition-content">
 
 Every script is safe to re-run. Existence checks before `mkdir`, `|| true` guards on network ops, and `command -v` checks before installing prevent duplication on partial failures.
+
+</div>
+</div>
 
 ### 2. Loose Coupling — The Fallback Pattern
 
 The runtime (`dbx-smith.sh`) is loosely coupled with the registry. If the registry is deleted, it falls back to inspecting `/etc/passwd` inside the container for `ghostuser`. Tools should degrade gracefully, not crash.
 
-### 3. Visual Determinism — Deterministic UI
+<div className="admonition admonition-info alert alert--info">
+<div className="admonition-heading">
+<h5>📘 VISUAL DETERMINISM</h5>
+</div>
+<div className="admonition-content">
 
 Terminal colors are derived from the image name via `cksum`, not randomly assigned. The same image always produces the same color — a security feature that prevents running commands in the wrong terminal window.
+
+</div>
+</div>
 
 ---
 

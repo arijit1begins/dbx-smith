@@ -8,14 +8,14 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  /* Distrobox / GNOME Palette */
-  --ifm-color-primary: #70594d;
-  --ifm-color-primary-dark: #655045;
-  --ifm-color-primary-darker: #5f4c41;
-  --ifm-color-primary-darkest: #4e3e36;
-  --ifm-color-primary-light: #7b6255;
-  --ifm-color-primary-lighter: #816759;
-  --ifm-color-primary-lightest: #937566;
+  /* DbxSmith Vibrant Palette */
+  --ifm-color-primary: #3578e5;
+  --ifm-color-primary-dark: #306cd2;
+  --ifm-color-primary-darker: #2d66c6;
+  --ifm-color-primary-darkest: #2554a3;
+  --ifm-color-primary-light: #4986e7;
+  --ifm-color-primary-lighter: #538dea;
+  --ifm-color-primary-lightest: #73a3ef;
 
   --ifm-background-color: #f6f5f4;
   --ifm-font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -35,13 +35,13 @@
 
 /* Adwaita Dark Theme */
 [data-theme='dark'] {
-  --ifm-color-primary: #b5836a;
-  --ifm-color-primary-dark: #ad7458;
-  --ifm-color-primary-darker: #a36d53;
-  --ifm-color-primary-darkest: #875a44;
-  --ifm-color-primary-light: #bc8f79;
-  --ifm-color-primary-lighter: #c09681;
-  --ifm-color-primary-lightest: #ccaa99;
+  --ifm-color-primary: #4a8df8;
+  --ifm-color-primary-dark: #317ef7;
+  --ifm-color-primary-darker: #2477f7;
+  --ifm-color-primary-darkest: #0961ef;
+  --ifm-color-primary-light: #639cf9;
+  --ifm-color-primary-lighter: #70a4f9;
+  --ifm-color-primary-lightest: #96bcfa;
   
   --ifm-background-color: #1e1e1e;
   --ifm-navbar-background-color: #241f31;
@@ -166,4 +166,57 @@ pre {
   justify-content: flex-end;
   border-bottom: 1px solid var(--ifm-color-emphasis-200);
 }
+/* Blog specific fixes */
+.blog-wrapper h1, .blog-wrapper h2, .blog-wrapper h3 {
+  color: var(--ifm-color-primary);
+}
 
+.blog-post-item__title a {
+  color: var(--ifm-font-color-base) !important;
+  font-weight: 800;
+}
+
+.blog-post-item__title a:hover {
+  color: var(--ifm-color-primary) !important;
+}
+
+/* Mobile specific improvements */
+@media screen and (max-width: 600px) {
+  .navbar__logo {
+    margin-right: 0.25rem;
+  }
+  
+  .navbar__brand {
+    font-size: 0.9rem;
+  }
+  
+  .hero__title {
+    font-size: 2.5rem;
+  }
+}
+
+/* Social Icon Spacing in Blog */
+.avatar__intro .avatar__socials a {
+  margin-right: 12px;
+}
+
+/* Mermaid Zoom Controls Responsiveness */
+@media screen and (max-width: 600px) {
+  .mermaid-zoom-controls {
+    top: auto;
+    bottom: 10px;
+    right: 10px;
+    scale: 0.8;
+  }
+}
+
+/* Premium Admonitions */
+.admonition {
+  border-radius: 12px;
+  border-left-width: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='dark'] .admonition {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
