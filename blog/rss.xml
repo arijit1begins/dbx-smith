@@ -4,33 +4,37 @@
         <title>DbxSmith Blog</title>
         <link>https://arijit1begins.github.io/dbx-smith/blog</link>
         <description>DbxSmith Blog</description>
-        <lastBuildDate>Mon, 20 Apr 2026 00:00:00 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 29 Apr 2026 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>en</language>
         <item>
-            <title><![CDATA[Announcing DbxSmith - The Forge for Isolated Environments]]></title>
-            <link>https://arijit1begins.github.io/dbx-smith/blog/announcing-dbx-smith</link>
-            <guid>https://arijit1begins.github.io/dbx-smith/blog/announcing-dbx-smith</guid>
-            <pubDate>Mon, 20 Apr 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[Today, we are thrilled to announce DbxSmith, a powerful developer productivity suite built on top of Distrobox and Podman.]]></description>
-            <content:encoded><![CDATA[<p>Today, we are thrilled to announce <strong>DbxSmith</strong>, a powerful developer productivity suite built on top of Distrobox and Podman.</p>
-<p>DbxSmith is designed to bridge the gap between "standard" containerized development and the strict security requirements of modern engineering environments. Whether you need a simple host-mirrored environment or a strictly isolated airgapped vault, DbxSmith is your forge.</p>
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="why-dbxsmith">Why DbxSmith?<a href="https://arijit1begins.github.io/dbx-smith/blog/announcing-dbx-smith#why-dbxsmith" class="hash-link" aria-label="Direct link to Why DbxSmith?" title="Direct link to Why DbxSmith?" translate="no">​</a></h2>
-<p>Standard containers are great, but managing multiple environments with different configurations, network rules, and shell integrations can quickly become a headache. DbxSmith automates this complexity using <strong>Modular Manifests</strong> and <strong>Provisioning Strategies</strong>.</p>
-<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="highlights">Highlights:<a href="https://arijit1begins.github.io/dbx-smith/blog/announcing-dbx-smith#highlights" class="hash-link" aria-label="Direct link to Highlights:" title="Direct link to Highlights:" translate="no">​</a></h3>
+            <title><![CDATA[Introducing DbxSmith - The Forge for Isolated Developer Environments]]></title>
+            <link>https://arijit1begins.github.io/dbx-smith/blog/introducing-dbx-smith-v1</link>
+            <guid>https://arijit1begins.github.io/dbx-smith/blog/introducing-dbx-smith-v1</guid>
+            <pubDate>Wed, 29 Apr 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[Today, we are officially launching DbxSmith, a professional-grade provisioning suite for Distrobox and Podman.]]></description>
+            <content:encoded><![CDATA[<p>Today, we are officially launching <strong>DbxSmith</strong>, a professional-grade provisioning suite for <strong>Distrobox</strong> and <strong>Podman</strong>.</p>
+<p>DbxSmith was born out of a simple need: making containerized developer environments more secure, reproducible, and easy to manage without the overhead of complex orchestration. Whether you need a simple host-mirrored environment or a strictly isolated airgapped vault, DbxSmith is your forge.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="why-dbxsmith">Why DbxSmith?<a href="https://arijit1begins.github.io/dbx-smith/blog/introducing-dbx-smith-v1#why-dbxsmith" class="hash-link" aria-label="Direct link to Why DbxSmith?" title="Direct link to Why DbxSmith?" translate="no">​</a></h3>
+<p>Standard containers are powerful, but managing multiple environments with different configurations, network rules, and shell integrations can be difficult. DbxSmith automates this complexity using <strong>Modular Manifests</strong> and <strong>Provisioning Strategies</strong>.</p>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="key-features-of-v100">Key Features of v1.0.0:<a href="https://arijit1begins.github.io/dbx-smith/blog/introducing-dbx-smith-v1#key-features-of-v100" class="hash-link" aria-label="Direct link to Key Features of v1.0.0:" title="Direct link to Key Features of v1.0.0:" translate="no">​</a></h3>
 <ul>
-<li class=""><strong>Airgapped Strategy</strong>: Completely sever network bridges for a zero-persistent-network vault.</li>
-<li class=""><strong>Ghost Identity</strong>: Run as a transient user for complete identity obfuscation.</li>
-<li class=""><strong>Zero Configuration Drift</strong>: Atomic teardowns ensure your host stays clean.</li>
+<li class=""><strong>Modular Provisioning</strong>: Define your environment once, deploy it anywhere.</li>
+<li class=""><strong>Airgapped Strategy</strong>: Sever network bridges for high-security "Vault" environments.</li>
+<li class=""><strong>Automated Lifecycle</strong>: Seamless installation, updates, and atomic teardowns to keep your host clean.</li>
+<li class=""><strong>Interactive Documentation</strong>: A full documentation suite (where you are reading this!) to guide you through every feature.</li>
 </ul>
 <!-- -->
-<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="the-future-of-dbxsmith">The Future of DbxSmith<a href="https://arijit1begins.github.io/dbx-smith/blog/announcing-dbx-smith#the-future-of-dbxsmith" class="hash-link" aria-label="Direct link to The Future of DbxSmith" title="Direct link to The Future of DbxSmith" translate="no">​</a></h2>
-<p>Our goal is to productize this tool and eventually bring it to the <strong>CNCF Sandbox</strong>. We believe that every developer deserves a safe, reproducible, and isolated space to build.</p>
-<p>Stay tuned for more updates, and don't forget to check out our <a href="https://github.com/arijit1begins/dbx-smith" target="_blank" rel="noopener noreferrer" class="">GitHub repository</a>!</p>]]></content:encoded>
-            <category>DbxSmith</category>
+<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="getting-started">Getting Started<a href="https://arijit1begins.github.io/dbx-smith/blog/introducing-dbx-smith-v1#getting-started" class="hash-link" aria-label="Direct link to Getting Started" title="Direct link to Getting Started" translate="no">​</a></h3>
+<p>You can install DbxSmith with a single command:</p>
+<div class="language-bash codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-bash codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><div class="token-line" style="color:#393A34"><span class="token plain">curl -fsSL https://raw.githubusercontent.com/arijit1begins/dbx-smith/main/install.sh | bash</span><br></div></code></pre></div></div>
+<p>Check out our <a class="" href="https://arijit1begins.github.io/dbx-smith/docs/intro">Documentation</a> for deep dives into strategies and architecture. We are excited to see what you build!</p>
+<hr>
+<p><em>Stay tuned for more updates, and don't forget to check out our <a href="https://github.com/arijit1begins/dbx-smith" target="_blank" rel="noopener noreferrer" class="">GitHub repository</a>!</em></p>]]></content:encoded>
+            <category>launch</category>
+            <category>v1.0</category>
             <category>Distrobox</category>
-            <category>Containers</category>
             <category>Security</category>
         </item>
     </channel>
