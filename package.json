@@ -1,0 +1,19 @@
+{
+  "name": "dbx-smith",
+  "version": "1.0.0",
+  "description": "The Ultimate Productivity Suite for Distrobox and Podman.",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arijit1begins/dbx-smith.git"
+  },
+  "keywords": [
+    "distrobox",
+    "podman",
+    "container",
+    "productivity",
+    "automation"
+  ],
+  "author": "DbxSmith Contributors",
+  "license": "MIT"
+}

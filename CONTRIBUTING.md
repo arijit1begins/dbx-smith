@@ -60,23 +60,31 @@ We use **Semantic Release**. Please follow the [Conventional Commits](https://ww
 
 ## DevOps & Release Engineering
 
-### Version Management
-We use **Semantic Versioning (SemVer)**. Versioning is automated using `semantic-release`.
-- **Commits**: Follow the [Conventional Commits](https://www.conventionalcommits.org/) format. 
-- **Trigger**: Every push to `main` triggers a release analysis.
-- **Artifacts**: New tags and GitHub Releases are created automatically with generated changelogs.
+### CI/CD Workflows
+Our workflows are located in `.github/workflows/` and ensure code quality and automated delivery:
+- **`ci.yml` (Continuous Integration)**: 
+  - Runs **ShellCheck** on all binaries and core scripts.
+  - Executes **`test_strategies.sh`**, which spins up real containers to validate all isolation strategies (`standard`, `airgapped`, etc.).
+  - Triggered on every Push and Pull Request.
+- **`deploy-docs.yml` (Documentation Deployment)**:
+  - Triggered by changes in the `/docs` directory.
+  - Automatically builds the Docusaurus site and deploys it to GitHub Pages.
+- **`release.yml` (Automated Release)**:
+  - Triggered on every push to the `main` branch.
+  - Uses `semantic-release` to analyze commits, generate changelogs, and publish new GitHub Releases.
 
-### CI/CD Pipeline
-Our workflows are located in `.github/workflows/`:
-- **`ci.yml`**: Runs `shellcheck` and the `test_strategies.sh` suite on every PR.
-- **`deploy-docs.yml`**: Automatically builds and deploys the Docusaurus site to GitHub Pages.
-- **`release.yml`**: Handles the automated release process.
+### Commit Guidelines & Release Triggers
+Since we use automated versioning, your commit prefix determines if a new version is released:
+- **Triggers a Release**: `feat:` (Minor), `fix:` (Patch), `BREAKING CHANGE:` (Major).
+- **Does NOT Trigger a Release**: `docs:`, `chore:`, `ci:`, `style:`, `refactor:`, `test:`.
 
-### Packaging & Installation
-- **Make**: The `Makefile` is the source of truth for installation paths.
-- **Installer**: `install.sh` is a standalone script that downloads the core files and sets up the environment.
-- **Prerequisites**: The suite checks for `distrobox` and `podman` at runtime and installation.
+> [!IMPORTANT]
+> If you are modifying internal CI/CD YAML files or scripts that don't affect the end-user, please use the `ci:` or `chore:` prefix. Avoid using `fix:` for infrastructure changes unless they fix a bug in the shipped software itself.
 
+### Testing Locally
+Before submitting a PR, please run the following:
+1. **Linting**: `shellcheck bin/* src/*.sh`
+2. **Strategy Tests**: `./test_strategies.sh` (Requires `podman` and `distrobox` installed on your host).
 ## Questions?
 Feel free to open a Discussion on GitHub!
 

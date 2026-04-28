@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # dbx-smith-spin - The CLI Factory/Provisioner / DbxSmith
 
-readonly VERSION="7.2.0"
+readonly VERSION="1.0.0"
 readonly HOME_BASE="${HOME}/boxes"
 readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
 readonly ALIAS_DIR="${CONFIG_DIR}/aliases.d"
