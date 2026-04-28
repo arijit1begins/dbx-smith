@@ -7,7 +7,7 @@
 
 A professional-grade provisioning and management suite for **Distrobox** and **Podman**. Forge isolated developer environments with strategic network control, deterministic UI, and atomic teardowns.
 
-📖 **[Full documentation →](https://arijit1begins.github.io/dbx-smith)**
+📖 **[Full documentation →](docs/docs/intro.mdx)**
 
 ## Installation
 
