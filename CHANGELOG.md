@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/arijit1begins/dbx-smith/compare/v1.1.0...v1.2.0) (2026-04-28)
+
+
+### Features
+
+* implement man pages for dbx-smith-spin and dbx-smith-rm with updated installation scripts and documentation headers ([971f0eb](https://github.com/arijit1begins/dbx-smith/commit/971f0ebfceb4469326c5ffa30bd289f0ad6e23be))
+
 # [1.1.0](https://github.com/arijit1begins/dbx-smith/compare/v1.0.0...v1.1.0) (2026-04-28)
 
 

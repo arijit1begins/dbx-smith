@@ -6,7 +6,7 @@
 #   (standard, airgapped, ghost, isolated-net). Generates custom profiles, networking,
 #   and dynamic shell integrations.
 
-readonly VERSION="1.1.0"
+readonly VERSION="1.2.0"
 readonly HOME_BASE="${HOME}/boxes"
 readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
 readonly ALIAS_DIR="${CONFIG_DIR}/aliases.d"
