@@ -67,7 +67,7 @@ _register_shortcuts() {
     local usr_bind="$3"
     local fragment="$ALIAS_DIR/${name}.sh"
 
-    > "$fragment"
+    true > "$fragment"
     
     if [[ -n "$usr_alias" ]]; then
         echo "alias ${usr_alias}=\"dbx-smith ${name}\"" >> "$fragment"
@@ -198,7 +198,7 @@ EOF
     esac
 
     echo "Creating distrobox '$name' ($image) using strategy '$strategy'..."
-    distrobox create "${dbx_flags[@]}"
+    distrobox create --yes "${dbx_flags[@]}"
     
     if [[ "$strategy" == "airgapped" ]]; then
         echo "Airgapped strategy detected. Bootstrapping container with temporary internet access..."

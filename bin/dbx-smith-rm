@@ -67,7 +67,7 @@ main() {
     fi
 
     # Cleanup filesystem
-    [[ -d "$HOME_BASE/$target" ]] && rm -rf "$HOME_BASE/$target" && echo "Removed isolated home directory."
+    [[ -d "$HOME_BASE/$target" ]] && rm -rf "${HOME_BASE:?}/${target:?}" && echo "Removed isolated home directory."
     [[ -f "$ALIAS_DIR/${target}.sh" ]] && rm -f "$ALIAS_DIR/${target}.sh" && echo "Removed alias fragment."
     [[ -f "$REG_DIR/${target}.conf" ]] && rm -f "$REG_DIR/${target}.conf" && echo "Removed registry manifest."
 
