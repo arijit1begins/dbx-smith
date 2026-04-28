@@ -13,8 +13,9 @@
             <link>https://arijit1begins.github.io/dbx-smith/blog/introducing-dbx-smith-v1</link>
             <guid>https://arijit1begins.github.io/dbx-smith/blog/introducing-dbx-smith-v1</guid>
             <pubDate>Wed, 29 Apr 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[Today, we are officially launching DbxSmith, a professional-grade provisioning suite for Distrobox and Podman.]]></description>
-            <content:encoded><![CDATA[<p>Today, we are officially launching <strong>DbxSmith</strong>, a professional-grade provisioning suite for <strong>Distrobox</strong> and <strong>Podman</strong>.</p>
+            <description><![CDATA[DbxSmith v1.0 Launch Hero]]></description>
+            <content:encoded><![CDATA[<p><img decoding="async" loading="lazy" alt="DbxSmith v1.0 Launch Hero" src="https://arijit1begins.github.io/dbx-smith/assets/images/dbx-smith-v1-hero-92aee7d09521059bcdc61ae7664dccc9.png" width="1024" height="1024" class="img_ev3q"></p>
+<p>Today, we are officially launching <strong>DbxSmith</strong>, a professional-grade provisioning suite for <strong>Distrobox</strong> and <strong>Podman</strong>.</p>
 <p>DbxSmith was born out of a simple need: making containerized developer environments more secure, reproducible, and easy to manage without the overhead of complex orchestration. Whether you need a simple host-mirrored environment or a strictly isolated airgapped vault, DbxSmith is your forge.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="why-dbxsmith">Why DbxSmith?<a href="https://arijit1begins.github.io/dbx-smith/blog/introducing-dbx-smith-v1#why-dbxsmith" class="hash-link" aria-label="Direct link to Why DbxSmith?" title="Direct link to Why DbxSmith?" translate="no">​</a></h3>
 <p>Standard containers are powerful, but managing multiple environments with different configurations, network rules, and shell integrations can be difficult. DbxSmith automates this complexity using <strong>Modular Manifests</strong> and <strong>Provisioning Strategies</strong>.</p>
@@ -32,7 +33,7 @@
 <p>Check out our <a class="" href="https://arijit1begins.github.io/dbx-smith/docs/intro">Documentation</a> for deep dives into strategies and architecture. We are excited to see what you build!</p>
 <hr>
 <p><em>Stay tuned for more updates, and don't forget to check out our <a href="https://github.com/arijit1begins/dbx-smith" target="_blank" rel="noopener noreferrer" class="">GitHub repository</a>!</em></p>]]></content:encoded>
-            <category>launch</category>
+            <category>Launch</category>
             <category>v1.0</category>
             <category>Distrobox</category>
             <category>Security</category>

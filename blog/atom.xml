@@ -12,8 +12,9 @@
         <id>https://arijit1begins.github.io/dbx-smith/blog/introducing-dbx-smith-v1</id>
         <link href="https://arijit1begins.github.io/dbx-smith/blog/introducing-dbx-smith-v1"/>
         <updated>2026-04-29T00:00:00.000Z</updated>
-        <summary type="html"><![CDATA[Today, we are officially launching DbxSmith, a professional-grade provisioning suite for Distrobox and Podman.]]></summary>
-        <content type="html"><![CDATA[<p>Today, we are officially launching <strong>DbxSmith</strong>, a professional-grade provisioning suite for <strong>Distrobox</strong> and <strong>Podman</strong>.</p>
+        <summary type="html"><![CDATA[DbxSmith v1.0 Launch Hero]]></summary>
+        <content type="html"><![CDATA[<p><img decoding="async" loading="lazy" alt="DbxSmith v1.0 Launch Hero" src="https://arijit1begins.github.io/dbx-smith/assets/images/dbx-smith-v1-hero-92aee7d09521059bcdc61ae7664dccc9.png" width="1024" height="1024" class="img_ev3q"></p>
+<p>Today, we are officially launching <strong>DbxSmith</strong>, a professional-grade provisioning suite for <strong>Distrobox</strong> and <strong>Podman</strong>.</p>
 <p>DbxSmith was born out of a simple need: making containerized developer environments more secure, reproducible, and easy to manage without the overhead of complex orchestration. Whether you need a simple host-mirrored environment or a strictly isolated airgapped vault, DbxSmith is your forge.</p>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="why-dbxsmith">Why DbxSmith?<a href="https://arijit1begins.github.io/dbx-smith/blog/introducing-dbx-smith-v1#why-dbxsmith" class="hash-link" aria-label="Direct link to Why DbxSmith?" title="Direct link to Why DbxSmith?" translate="no">​</a></h3>
 <p>Standard containers are powerful, but managing multiple environments with different configurations, network rules, and shell integrations can be difficult. DbxSmith automates this complexity using <strong>Modular Manifests</strong> and <strong>Provisioning Strategies</strong>.</p>
@@ -35,7 +36,7 @@
             <name>arijit1begins</name>
             <uri>https://github.com/arijit1begins</uri>
         </author>
-        <category label="launch" term="launch"/>
+        <category label="Launch" term="Launch"/>
         <category label="v1.0" term="v1.0"/>
         <category label="Distrobox" term="Distrobox"/>
         <category label="Security" term="Security"/>
