@@ -10,89 +10,61 @@ This document provides a detailed dissection of the **DbxSmith** suite, its inte
 
 DbxSmith operates as a wrapper and orchestration layer over **Distrobox** and **Podman**. It adds a stateful registry, strategic provisioning, and shell-level UI integration.
 
-## Infrastructure & Boundary Map
+There are three CLI tools, each owning a distinct phase of a box's lifecycle:
 
-The following diagram illustrates the boundaries between the Host system, the DbxSmith orchestration layer, and the provisioned environments.
+| Tool | Role | Key Actions |
+| :--- | :--- | :--- |
+| `dbx-smith-spin` | **Provisioner** | Reads strategy → creates container → writes registry manifest → generates alias fragment |
+| `dbx-smith` (runtime) | **Entry Point** | Reads registry → enters correct box as correct user → resets terminal on exit |
+| `dbx-smith-rm` | **Destructor** | Stops container → removes home dir, alias fragment, network bridge, registry manifest |
+
+### Prerequisites
+
+| Category | Tools | Purpose |
+| :--- | :--- | :--- |
+| **Engine** | `distrobox`, `podman` | Container creation and management |
+| **Utilities** | `cksum` | Deterministic color derivation from image name |
+| **Utilities** | `base64` | Zero-escape init-hook payload injection |
+| **Utilities** | `awk`, `grep` | Registry parsing and container list filtering |
+
 
 ```mermaid
-graph TB
-    subgraph Host ["Host OS (Linux)"]
-        direction TB
-        Shell[User Shell: Bash/Zsh]
-        ConfigDir["~/.config/dbx-smith/"]
-        Registry["/registry (JSON Manifests)"]
-        Aliases["/aliases.d (Shell Fragments)"]
-        
-        subgraph Engine ["Container Engine"]
-            Podman[Podman Runtime]
-            DBX[Distrobox CLI]
-        end
-        
-        ConfigDir --- Registry
-        ConfigDir --- Aliases
+%%{init: {"themeVariables": {"fontSize": "16px"}}}%%
+graph LR
+    User([User])
+
+    User -->|"1. spin strategy"| Spin
+    User -->|"4. dbx-smith box"| Runtime
+    User -->|"7. dbx-smith-rm box"| RM
+
+    subgraph DbxSmith ["DbxSmith Layer"]
+        Spin["dbx-smith-spin\n(Provisioner)"]
+        Runtime["dbx-smith\n(Runtime)"]
+        RM["dbx-smith-rm\n(Destructor)"]
     end
 
-    subgraph DbxSmith ["DbxSmith Orchestration Layer"]
-        Spin[dbx-smith-spin]
-        Runtime[dbx-smith.sh]
-        RM[dbx-smith-rm]
+    subgraph State ["~/.config/dbx-smith/"]
+        Registry[("registry/\nmanifests")]
+        Aliases["aliases.d/\nfragments"]
     end
 
-    subgraph Box ["Distrobox Boundary (The Forge)"]
-        direction TB
-        subgraph BoxInternal ["Internal Environment"]
-            ProfileD["/etc/profile.d/ (Theme Injected)"]
-            BoxUser["User: hostuser or ghostuser"]
-            BoxHome["$HOME: Linked or Isolated"]
-        end
-        
-        subgraph Net ["Network Strategy"]
-            Bridge[Host Bridge]
-            Null[No Network]
-            NAT[NAT / Private Subnet]
-        end
+    subgraph Engine ["Container Engine"]
+        DBX["Distrobox CLI"]
+        Podman["Podman Runtime"]
+        DBX --> Podman
     end
 
-    %% Connections
-    Shell --> Runtime
-    Runtime -- "Reads State" --> Aliases
-    Spin -- "Forges" --> Box
-    Spin -- "Registers" --> Registry
-    Spin -- "Invokes" --> DBX
-    DBX -- "Manages" --> Podman
-    RM -- "Atomic Wipe" --> Box
-    RM -- "Wipes State" --> Registry
-```
+    Spin -->|"2. distrobox create"| DBX
+    Spin -->|"3. writes manifest"| Registry
+    Spin -->|"3. writes alias fragment"| Aliases
 
+    Runtime -->|"5. reads STRATEGY field"| Registry
+    Runtime -->|"5. sources alias fragments"| Aliases
+    Runtime -->|"6. distrobox enter"| DBX
 
-### High-Level Component Map
-
-```mermaid
-graph TD
-    User([User]) --> Spin[dbx-smith-spin]
-    User --> Runtime[dbx-smith runtime]
-    User --> RM[dbx-smith-rm]
-
-    subgraph "The Forge (Provisioning)"
-        Spin --> Registry[(Manifest Registry)]
-        Spin --> Strategy{Strategies}
-        Strategy --> |standard| StdBox[Distrobox: Host-Linked]
-        Strategy --> |airgapped| AirBox[Distrobox: Offline Vault]
-        Strategy --> |ghost| GhostBox[Distrobox: Transient Identity]
-        Strategy --> |isolated-net| NetBox[Distrobox: Private Network]
-    end
-
-    subgraph "The Runtime"
-        Runtime --> Completion[Shell Completion]
-        Runtime --> Alias[Dynamic Aliases]
-        Runtime --> Registry
-    end
-
-    subgraph "The Cleanup"
-        RM --> Registry
-        RM --> Alias
-        RM --> Containers[Podman/Distrobox]
-    end
+    RM -->|"8. distrobox rm + podman network rm"| Podman
+    RM -->|"9. wipes manifest"| Registry
+    RM -->|"9. wipes alias fragment"| Aliases
 ```
 
 ---
@@ -102,25 +74,39 @@ graph TD
 When you run `dbx-smith-spin`, the following sequence occurs:
 
 ```mermaid
+%%{init: {"themeVariables": {"fontSize": "16px"}}}%%
 sequenceDiagram
     participant U as User
     participant S as dbx-smith-spin
-    participant R as Registry
-    participant D as Distrobox/Podman
+    participant D as Distrobox / Podman
     participant C as Container FS
+    participant R as Registry
 
-    U->>S: Run spin (e.g. strategy: airgapped)
-    S->>S: Validate Prerequisites (Distrobox check)
-    S->>R: Write Manifest (~/.config/dbx-smith/registry/name)
-    S->>D: Execute 'distrobox create' with strategic flags
-    D-->>C: Create container & Home dir
-    S->>S: Calculate Image CRC32
-    S->>C: Inject UI Theme into /etc/profile.d/
+    note over U,R: Phase 1 — Preflight
+    U->>S: 1. spin [strategy] [name] [image]
+    S->>S: 2. Validate prerequisites (distrobox, podman, cksum)
+    S->>S: 3. Check for duplicate box name
+
+    note over U,R: Phase 2 — Payload Assembly
+    S->>S: 4. Derive deterministic HEX color from image hash (cksum)
+    S->>S: 5. Base64-encode UI theme + PS1 as init-hook payload
+
+    note over U,R: Phase 3 — Container Creation
+    S->>D: 6. distrobox create [strategy flags] --init-hooks [payload]
+    D-->>C: 7. Container created, home dir initialised
+    C-->>C: 8. Init-hook executes: writes /etc/profile.d/dbx-smith-env.sh + /etc/zsh/zshrc
+
+    note over U,R: Phase 4 — Airgap Sever (airgapped strategy only)
     alt Strategy is Airgapped
-        S->>D: Execute Bridge-Destruction hack
+        S->>D: 9a. distrobox enter [name] -- true (trigger first-run package install)
+        S->>D: 9b. podman network disconnect dbx-tmp-[name]
+        S->>D: 9c. podman network rm dbx-tmp-[name] (container permanently offline)
     end
-    S->>S: Generate Alias Fragment
-    S-->>U: Provisioning Complete
+
+    note over U,R: Phase 5 — State Registration
+    S->>R: 10. Write manifest (NAME, STRATEGY, IMAGE, CREATED_AT)
+    S->>S: 11. Write alias / bindkey fragment to aliases.d/
+    S-->>U: 12. Provisioning complete
 ```
 
 ---
@@ -130,62 +116,78 @@ sequenceDiagram
 ### 1. `bin/dbx-smith-spin` (The Architect)
 This is the core provisioning logic.
 - **Image Checksumming**: Uses `cksum` on the image name to generate a deterministic seed.
-- **Theme Generation**: Converts the checksum seed into HSL values. This ensures that every time you pull `ubuntu:latest`, your "standard" boxes have consistent, distinct colors.
-- **Isolation Logic**: 
-  - For **Airgapped**, it uses `--additional-flags "--network=none"` during create, but since Distrobox often mounts host network files, it explicitly wipes `/etc/resolv.conf` and `/etc/hosts` fragments inside the box post-init.
+- **Theme Generation**: Converts the checksum seed into an RGB hex color. This ensures that every time you pull `ubuntu:latest`, your boxes have a consistent, distinct background color.
+- **Isolation Logic**:
+  - For **Airgapped**, it uses a **two-phase** approach. During `distrobox create`, it attaches a throwaway Podman network (`dbx-tmp-<name>`) so Distrobox's first-run package installer can reach the internet. Once `distrobox enter <name> -- true` completes, DbxSmith runs `podman network disconnect` and `podman network rm` to permanently destroy the bridge. The container is then left with zero network interfaces — isolation is achieved via namespace detachment, not a flag.
 
 ### 2. `src/dbx-smith.sh` (The Pulse)
 The runtime core that lives in your shell.
 - **Dynamic Sourcing**: It doesn't just store aliases; it sources them from `~/.config/dbx-smith/aliases.d/`. This allows you to "hot-swap" environment access without restarting your shell.
-- **The Wrapper**: `dbx-smith()` function intercepts the container name and checks the registry before calling `distrobox enter`.
+- **The Wrapper**: `dbx-smith()` function intercepts the container name and checks the registry before calling `distrobox enter`. For `ghost` boxes, it automatically appends `--user ghostuser`.
 
 ### 3. `bin/dbx-smith-rm` (The Reaper)
 Ensures zero-drift teardowns.
-- **Atomic Deletion**: It reads the registry to find exactly what was created (aliases, home directories, containers) and wipes them in one pass.
+- **Atomic Deletion**: It reads the registry to find exactly what was created (aliases, home directories, containers, network bridges) and wipes them in one pass.
 
 ---
 
 ## Strategic Visualizations
 
 ### Standard Strategy
-*   **Visual**: Terminal colors match the host. Identical prompt appearance.
-*   **Networking**: Fully transparent.
+*   **Visual**: A custom PS1 is injected with a cyan `(<name>)` distrobox marker prefix, e.g. `(devbox) user@host:~$`. The terminal background is set to a deterministic color derived from the image name hash. The prompt is **not** identical to the host — it is always clearly marked as a box.
+*   **Networking**: Fully transparent — uses the host's default Podman bridge. The container can reach the internet and the host network.
+*   **Home Dir**: Bind-mounted from the host (`$HOME` is the same inside and outside). Host `~/.ssh`, `~/.gnupg`, and all other directories are fully visible.
 *   **Use Case**: Your daily driver. Node.js development, Go, etc., where you just need a different OS but same host files.
 
 ### Airgapped Strategy
-*   **Visual**: Distinct, often muted or "alert" colors (e.g., deep red or gray background).
-*   **Networking**: `ping` returns "Network is unreachable". `/etc/resolv.conf` is empty.
-*   **Home Dir**: Located at `~/dbx-homes/<name>`. Your host `.ssh` and `.bash_history` are invisible.
+*   **Visual**: A custom PS1 with a cyan `(<name>)` marker and a deterministic background color (derived from the image hash).
+*   **Networking**: After provisioning, `ping` returns "Network is unreachable". The container's network namespace is fully detached — no bridge, no DNS, no external routing. This is achieved by destroying the temporary Podman network post-init, not by setting a flag at create time.
+*   **Home Dir**: Located at `~/boxes/<name>`. Your host `~/.ssh`, `~/.gnupg`, and `.bash_history` are invisible from inside the container.
 *   **Use Case**: Analyzing untrusted scripts, managing private keys, or "focused" offline coding.
 
 ### Ghost Strategy
-*   **Visual**: Usually high-contrast or unique themes to remind you that you are a "ghost".
-*   **Identity**: Running `whoami` returns `ghostuser`.
-*   **Use Case**: Testing permission-sensitive scripts or developing with a clean-slate user identity without creating a real Linux user on the host.
+*   **Visual**: A custom PS1 with a cyan `(<name>)` marker and a deterministic background color.
+*   **Identity**: Running `whoami` returns `ghostuser`. Running `hostname` returns `ghost-shell`. Both the username and hostname differ from the host, but the network and home directory are still host-linked.
+*   **Mechanism**: An init-hook runs `useradd -m ghostuser` inside the container (permanent within the container's `/etc/passwd`). The runtime (`dbx-smith.sh`) reads the registry and passes `--user ghostuser` to `distrobox enter` automatically.
+*   **Home Dir**: Bind-mounted from the host `$HOME` — the ghost user operates in the same home directory as the host user.
+*   **Use Case**: Testing permission-sensitive scripts or developing with a clean-slate identity without creating a real Linux user on the host.
 
 ### Isolated-Net Strategy
-*   **Visual**: Network-themed color accents (e.g., blue or cyan).
-*   **Networking**: Isolated bridge with a private subnet. Host is reachable, but the container cannot be reached by other containers on the host bridge.
-*   **Home Dir**: Usually isolated at `~/dbx-homes/<name>`.
-*   **Use Case**: Developing microservices or web apps that require a dedicated, non-clashing IP address or a private network segment.
+*   **Visual**: A custom PS1 with a cyan `(<name>)` marker and a deterministic background color.
+*   **Networking**: The container's network namespace is unshared from the host (`--unshare-netns`) and attached to a **dedicated Podman NAT bridge** (`dbx-net-<name>`). This gives the container outbound internet access via NAT while keeping it off the host's default bridge network. The bridge persists and is cleaned up by `dbx-smith-rm`.
+*   **Home Dir**: Located at `~/boxes/<name>`. Host `~/.ssh` and other sensitive directories are not accessible from inside.
+*   **Use Case**: Developing microservices or web apps that require a dedicated, non-clashing network segment or a reproducible private IP.
 
 ---
 
-## Database Schema (The Registry)
+## The Registry
 
-DbxSmith avoids heavy databases. It uses a **Key-Value Flatfile** system:
+The registry is the **single source of truth** that ties all three tools together. Without it, DbxSmith degrades to a thin alias for raw `distrobox` — no strategy-aware entry, no targeted teardown, no deterministic state.
 
-**Path**: `~/.config/dbx-smith/registry/<box_name>`
+**Path**: `~/.config/dbx-smith/registry/<box_name>.conf`
 
 ```bash
 # Example Manifest
-BOX_NAME="vault"
-STRATEGY="airgapped"
-IMAGE="alpine:latest"
-HOME_DIR="/home/user/dbx-homes/vault"
-THEME_SEED="38472910"
-CREATED_AT="2026-04-21T00:15:00Z"
+NAME=vault
+STRATEGY=airgapped
+IMAGE=alpine:latest
+CREATED_AT=2026-04-21T00:15:00Z
 ```
+
+### What each field drives
+
+| Field | Written by | Read by | Purpose |
+| :--- | :--- | :--- | :--- |
+| `NAME` | `spin` | `rm` | Exact match key used by `rm` to target the right container and its associated home dir, alias fragment, and network bridge. |
+| `STRATEGY` | `spin` | `runtime` | Tells `dbx-smith` *how* to enter the box. `ghost` → appends `--user ghostuser`. Other strategies → standard entry. |
+| `IMAGE` | `spin` | — | Audit trail. Lets you inspect what image a running box was built from without querying Podman. |
+| `CREATED_AT` | `spin` | — | Timestamp for auditing and sorting when you have many boxes. |
+
+### What breaks without it
+
+- **Runtime (`dbx-smith`)**: Falls back to a heuristic — checks `/etc/passwd` inside the container for `ghostuser`. If the registry is missing, `ghost` boxes may be entered as the wrong user.
+- **Teardown (`dbx-smith-rm`)**: Cannot know whether the box had an isolated home directory (`~/boxes/<name>`) or a dedicated network bridge (`dbx-net-<name>`). Those artifacts will be **orphaned** on the filesystem.
+- **Duplicate guard (`spin`)**: `spin` reads the registry to prevent re-provisioning a box that already exists by name.
 
 ---
 
