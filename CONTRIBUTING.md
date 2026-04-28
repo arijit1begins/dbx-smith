@@ -10,7 +10,7 @@ By participating in this project, you agree to abide by our Code of Conduct. (TL
 
 ### 1. Reporting Bugs
 - Check the [Issues](https://github.com/arijit1begins/dbx-smith/issues) to see if the bug has already been reported.
-- If not, open a new issue. Include steps to reproduce, your OS, and Distrobox/Podman versions.
+- If not, open a new issue. Include steps to reproduce, your OS, and [Distrobox](https://distrobox.it/)/[Podman](https://podman.io/) versions.
 
 ### 2. Suggesting Enhancements
 - Open an issue with the "enhancement" label.

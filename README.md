@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/license-Apache_2.0-green?style=flat-square)
 ![CNCF Sandbox](https://img.shields.io/badge/CNCF-Sandbox_Pending-blue?style=flat-square)
 
-A professional-grade provisioning and management suite for **Distrobox** and **Podman**. Forge isolated developer environments with strategic network control, deterministic UI, and atomic teardowns.
+A professional-grade provisioning and management suite for **[Distrobox](https://distrobox.it/)** and **[Podman](https://podman.io/)**. Forge isolated developer environments with strategic network control, deterministic UI, and atomic teardowns.
 
 📖 **[Full documentation →](docs/docs/intro.mdx)**
 
