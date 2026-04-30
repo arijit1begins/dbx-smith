@@ -53,7 +53,7 @@ _bootstrap() {
         fi
     fi
 
-    for cmd in podman cksum awk grep printf id; do
+    for cmd in podman cksum awk grep printf id sed; do
         if ! command -v "$cmd" >/dev/null 2>&1; then
             echo "Error: Required command '$cmd' not found." >&2
             exit 127
@@ -206,7 +206,7 @@ EOF
     esac
 
     echo "Creating distrobox '$name' ($image) using strategy '$strategy'..."
-    distrobox create --yes "${dbx_flags[@]}"
+    distrobox create --yes "${dbx_flags[@]}" | sed "s/distrobox enter/dbx-smith/g"
     
     if [[ "$strategy" == "airgapped" ]]; then
         echo "Airgapped strategy detected. Bootstrapping container with temporary internet access..."
@@ -223,7 +223,17 @@ EOF
     _write_manifest "$name" "$strategy" "$image"
     _register_shortcuts "$name" "${usr_alias:-}" "${usr_bind:-}"
     
-    echo "Successfully provisioned '$name'."
+    echo -e "\n\033[1;32m✔ Successfully provisioned '$name'.\033[0m"
+    echo -e "To enter your new sandbox, run:"
+    echo -e "\n    \033[1;36mdbx-smith $name\033[0m\n"
+
+    if [[ -n "${usr_alias:-}" ]]; then
+        echo -e "Or use your custom alias: \033[1;36m$usr_alias\033[0m"
+    fi
+    if [[ -n "${usr_bind:-}" ]]; then
+        echo -e "Or use your hotkey: \033[1;36m${usr_bind}\033[0m"
+    fi
+    echo ""
 }
 
 main "$@"
