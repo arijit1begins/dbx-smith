@@ -163,16 +163,24 @@ main() {
     
     local script_payload
     script_payload=$(cat <<EOF
-mkdir -p /etc/profile.d /etc/zsh
-cat << 'INNER_EOF' > /etc/profile.d/dbx-smith-env.sh
+mkdir -p /etc/profile.d
+cat << INNER_EOF > /etc/profile.d/dbx-smith-env.sh
 echo -ne '${OSC_BG_SET}${color}\007'
-if [ -n "\${ZSH_VERSION:-}" ]; then
-    export PS1="%F{cyan}($name)%f %F{green}%n@%m%f:%F{blue}%~%f\$ "
+if [ -n "\\\${ZSH_VERSION:-}" ]; then
+    export PS1="%F{cyan}($name)%f %F{green}%n@%m%f:%F{blue}%~%f%# "
 else
-    export PS1="\[\033[36m\]($name)\[\033[0m\] \[\033[32m\]\u@\h\[\033[0m\]:\[\033[34m\]\w\[\033[0m\]\\$ "
+    export PS1="\\\[\\\033[36m\\\]($name)\\\[\\\033[0m\\\] \\\[\\\033[32m\\\]\\\u@\\\h\\\[\\\033[0m\\\]:\\\[\\\033[34m\\\]\\\w\\\[\\\033[0m\\\]\\\\\\\$ "
 fi
 INNER_EOF
-echo 'source /etc/profile.d/dbx-smith-env.sh' >> /etc/zsh/zshrc
+
+# Support multiple Zsh configuration paths (Fedora/RedHat vs Debian/Ubuntu)
+for zfile in /etc/zshrc /etc/zsh/zshrc; do
+    zdir=\$(dirname "\$zfile")
+    if [ -d "\$zdir" ]; then
+        touch "\$zfile"
+        grep -q "dbx-smith-env.sh" "\$zfile" || echo "source /etc/profile.d/dbx-smith-env.sh" >> "\$zfile"
+    fi
+done
 EOF
 )
     local payload
@@ -197,7 +205,7 @@ EOF
         isolated-net)
             # Create podman network if missing
             podman network inspect "dbx-net-${name}" >/dev/null 2>&1 || podman network create "dbx-net-${name}" >/dev/null
-            dbx_flags+=(--home "$HOME_BASE/$name" --unshare-netns --additional-flags "--network dbx-net-${name}" --init-hooks "$init_hook")
+            dbx_flags+=(--home "$HOME_BASE/$name" --unshare-all --additional-flags "--network dbx-net-${name}" --init-hooks "$init_hook")
             ;;
         *)
             echo "Error: Unknown strategy '$strategy'." >&2
