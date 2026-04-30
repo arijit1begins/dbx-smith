@@ -1,3 +1,19 @@
+# Changelog
+
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+## [1.3.0](https://github.com/arijit1begins/dbx-smith/compare/v1.2.0...v1.3.0) (2026-04-30)
+
+
+### Features
+
+* enable manual workflow triggers and conditional documentation deployment based on path changes ([8be2813](https://github.com/arijit1begins/dbx-smith/commit/8be2813bea5baea5429610eac7c39ecbc8e922fa))
+
+
+### Bug Fixes
+
+* **cli:** replace distrobox enter with dbx-smith in creation output and improve UI ([16a2f1a](https://github.com/arijit1begins/dbx-smith/commit/16a2f1a5cab76b156678a91905f652d9e49f5021))
+
 # [1.2.0](https://github.com/arijit1begins/dbx-smith/compare/v1.1.0...v1.2.0) (2026-04-28)
 
 
