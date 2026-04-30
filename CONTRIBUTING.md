@@ -60,26 +60,35 @@ We use **Semantic Release**. Please follow the [Conventional Commits](https://ww
 
 ## DevOps & Release Engineering
 
-### CI/CD Workflows
-Our workflows are located in `.github/workflows/` and ensure code quality and automated delivery:
-- **`ci.yml` (Continuous Integration)**: 
+### Unified Pipeline
+Our CI/CD orchestration is consolidated into `.github/workflows/pipeline.yml`, ensuring a streamlined and predictable release flow:
+- **CI Job (Continuous Integration)**: 
   - Runs **ShellCheck** on all binaries and core scripts.
-  - Executes **`test_strategies.sh`**, which spins up real containers to validate all isolation strategies.
-  - Triggered on every Push and Pull Request.
-- **`deploy-docs.yml` (Documentation Deployment)**:
-  - Automatically builds and deploys the Docusaurus site to GitHub Pages.
-  - **Manual Trigger**: Can be run manually via the "Actions" tab using `workflow_dispatch`.
-- **`release.yml` (Automated Release)**:
-  - Uses `semantic-release` to analyze commits, generate changelogs, and publish new GitHub Releases.
+  - Executes **`test_strategies.sh`**, validating all isolation strategies in real containers.
+  - Triggered on every Push and Pull Request to `main`.
+- **Release Job (GitHub Release)**:
+  - Triggered **ONLY** on pushed Git tags (e.g., `v1.2.3`).
+  - Uses `semantic-release` (UI only) to generate professional release notes and upload binary assets.
+- **Docs Job (Documentation)**:
+  - Runs after a successful release to build and deploy the Docusaurus site to GitHub Pages.
 
-### Commit Guidelines & Release Triggers
-Since we use automated versioning, your commit prefix determines if a new version is released:
-- **Triggers a Release**: `feat:` (Minor), `fix:` (Patch), `BREAKING CHANGE:` (Major).
-- **Does NOT Trigger a Release**: `docs:`, `chore:`, `ci:`, `style:`, `refactor:`, `test:`.
+### Local-First Release Strategy
+We follow a **Local-First, Tag-Driven Release Strategy**. GitHub Actions **NEVER** commits back to the repository. All versioning and changelog updates are managed by the author locally.
+
+#### Releasing a New Version:
+1. Ensure you are on the `main` branch with a clean working directory.
+2. Run the local release script:
+   ```bash
+   ./release.sh
+   ```
+3. This script will:
+   - Calculate the next SemVer version.
+   - Update `CHANGELOG.md` and `package.json`.
+   - Update the version string in `bin/dbx-smith-spin`.
+   - Create a local commit and a signed Git tag.
+4. Push the changes and tags: `git push origin main --tags`.
 
 ### Troubleshooting CI/CD
-- **Divergent Branches**: If the automated release bot commits to `main` while you are working locally, use `git pull --rebase` to sync.
-- **Node.js Versions**: We use Node 20 for documentation and Node 24 for certain internal actions. Ensure your local environment is at least on Node 20.
 - **ShellCheck Warnings**: The CI will fail if ShellCheck finds issues. Run `shellcheck bin/* src/*.sh` locally before pushing.
 
 ### Testing Locally

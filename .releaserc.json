@@ -4,30 +4,13 @@
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     [
-      "@semantic-release/changelog",
+      "@semantic-release/github",
       {
-        "changelogFile": "CHANGELOG.md"
+        "assets": [
+          {"path": "bin/dbx-smith-spin", "label": "dbx-smith-spin binary"},
+          {"path": "install.sh", "label": "DbxSmith Installer"}
+        ]
       }
-    ],
-    [
-      "@semantic-release/npm",
-      {
-        "npmPublish": false
-      }
-    ],
-    [
-      "@semantic-release/exec",
-      {
-        "prepareCmd": "sed -i 's/readonly VERSION=\".*\"/readonly VERSION=\"${nextRelease.version}\"/' bin/dbx-smith-spin"
-      }
-    ],
-    [
-      "@semantic-release/git",
-      {
-        "assets": ["package.json", "CHANGELOG.md", "bin/dbx-smith-spin"],
-        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
-      }
-    ],
-    "@semantic-release/github"
+    ]
   ]
 }
