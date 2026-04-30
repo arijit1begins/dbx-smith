@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.3.1](https://github.com/arijit1begins/dbx-smith/compare/v1.3.0...v1.3.1) (2026-04-30)
+
+
+### Bug Fixes
+
+* **cli:** enforce home isolation in isolated-net and fix terminal color injection ([70d9dca](https://github.com/arijit1begins/dbx-smith/commit/70d9dca380d6adcdddd4b8a984cf44c264fcc493))
+
 ## [1.3.0](https://github.com/arijit1begins/dbx-smith/compare/v1.2.0...v1.3.0) (2026-04-30)
 
 
