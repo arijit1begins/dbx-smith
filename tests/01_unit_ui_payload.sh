@@ -6,7 +6,8 @@ set -euo pipefail
 echo "Running UI Payload Unit Test..."
 
 # Create a mock environment
-export TARGET_DIR=$(mktemp -d)
+TARGET_DIR=$(mktemp -d)
+export TARGET_DIR
 trap 'rm -rf "$TARGET_DIR"' EXIT
 
 # Simulated inputs
@@ -41,7 +42,7 @@ fi
 
 # Validation
 if grep -Fq 'printf "\\033' "$ENV_FILE"; then
-    echo "❌ Error: Literal \\033 found in printf! Escape sequence broken."
+    printf "❌ Error: Literal \\033 found in printf! Escape sequence broken.\n"
     exit 1
 fi
 

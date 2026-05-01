@@ -3,12 +3,12 @@
 set -euo pipefail
 
 # Mock the environment to capture the payload
-export TARGET_DIR=$(mktemp -d)
+TARGET_DIR=$(mktemp -d)
+export TARGET_DIR
 trap 'rm -rf "$TARGET_DIR"' EXIT
 
 name="testbox"
 color="#3a4b5c"
-OSC_BG_SET="\033]11;"
 
 mkdir -p "$TARGET_DIR/etc/profile.d"
 

@@ -54,15 +54,14 @@ _dbx_comp_lazy() {
 
     local boxes=()
     if [[ -f "$CACHE_FILE" ]]; then
-        while IFS= read -r line; do
-            [[ -n "$line" ]] && boxes+=("$line")
-        done < "$CACHE_FILE"
+        mapfile -t boxes < "$CACHE_FILE"
     fi
 
     if [[ -n "${ZSH_VERSION:-}" ]]; then
         compadd -a boxes
     elif [[ -n "${BASH_VERSION:-}" ]]; then
         local cur="${COMP_WORDS[COMP_CWORD]}"
+        # shellcheck disable=SC2207
         COMPREPLY=( $(compgen -W "${boxes[*]}" -- "$cur") )
     fi
 }
@@ -88,6 +87,7 @@ if [[ -d "$_DBX_ALIAS_DIR" ]]; then
         done'
     elif [[ -n "${BASH_VERSION:-}" ]]; then
         for fragment in "$_DBX_ALIAS_DIR"/*.sh; do
+            # shellcheck source=/dev/null
             [[ -r "$fragment" && -s "$fragment" ]] && source "$fragment"
         done
     fi

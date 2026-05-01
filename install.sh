@@ -56,9 +56,11 @@ if [[ -n "$RC_FILE" && -f "$RC_FILE" ]]; then
         read -p "Would you like to automatically append the source line to $RC_FILE? (y/n) " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            echo "" >> "$RC_FILE"
-            echo "# DbxSmith Productivity Suite Runtime Core" >> "$RC_FILE"
-            echo "source $CONFIG_DIR/dbx-smith.sh" >> "$RC_FILE"
+            {
+                echo ""
+                echo "# DbxSmith Productivity Suite Runtime Core"
+                echo "source $CONFIG_DIR/dbx-smith.sh"
+            } >> "$RC_FILE"
             echo "Added to $RC_FILE."
         fi
     else

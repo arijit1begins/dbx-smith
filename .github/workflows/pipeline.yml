@@ -18,7 +18,7 @@ jobs:
     if: |
       github.event_name == 'pull_request' ||
       (github.event_name == 'push' && github.ref_type == 'tag') ||
-      (github.event_name == 'push' && github.ref_name == 'main' && !contains(github.event.head_commit.message, '[skip ci]'))
+      (github.event_name == 'push' && github.ref_name == 'main' && !contains(github.event.head_commit.message, '[skip branch ci]'))
     runs-on: ubuntu-latest
     outputs:
       docs: ${{ steps.filter.outputs.docs }}
