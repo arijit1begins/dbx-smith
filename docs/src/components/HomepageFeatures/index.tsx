@@ -15,7 +15,7 @@ const FeatureList: FeatureItem[] = [
     emoji: '⚒️',
     description: (
       <>
-        Choose from Standard, Airgapped, Ghost, or Isolated-Net strategies. 
+        Choose from Standard, Airgapped, Ghost, Isolated-Net, or Hybrid strategies. 
         DbxSmith forges the exact environment your workflow demands with precision.
       </>
     ),
@@ -25,7 +25,7 @@ const FeatureList: FeatureItem[] = [
     emoji: '🔒',
     description: (
       <>
-        Leverage the Bridge-Destruction hack for zero-persistent-network vaults. 
+        Leverage the Bridge-Destruction hack and True Tmpfs Home Isolation. 
         Keep your host secure and your identity obfuscated in untrusted environments.
       </>
     ),

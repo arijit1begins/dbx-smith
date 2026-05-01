@@ -142,7 +142,7 @@ Ensures zero-drift teardowns.
 ### Airgapped Strategy
 *   **Visual**: A custom PS1 with a cyan `(<name>)` marker and a deterministic background color (derived from the image hash).
 *   **Networking**: After provisioning, `ping` returns "Network is unreachable". The container's network namespace is fully detached — no bridge, no DNS, no external routing. This is achieved by destroying the temporary Podman network post-init, not by setting a flag at create time.
-*   **Home Dir**: Located at `~/boxes/<name>`. Your host `~/.ssh`, `~/.gnupg`, and `.bash_history` are invisible from inside the container.
+*   **Home Dir (True tmpfs isolation)**: Distrobox enforces a strict behavior where it always bind-mounts the host's default home directory (e.g., `/home/username`) into the container, even when a custom `--home` flag is provided. To bypass this and achieve true isolation, DbxSmith over-mounts the entire `/home` directory with an empty `tmpfs` RAM disk at the container level. The custom home directory (`~/boxes/<name>`) is then cleanly bind-mounted back into this empty space. This ensures host dotfiles, SSH keys, and history (`~/.ssh`, `~/.gnupg`, etc.) are completely invisible and unreachable from inside the container, preventing dotfile leaks.
 *   **Use Case**: Analyzing untrusted scripts, managing private keys, or "focused" offline coding.
 
 ### Ghost Strategy
@@ -155,8 +155,15 @@ Ensures zero-drift teardowns.
 ### Isolated-Net Strategy
 *   **Visual**: A custom PS1 with a cyan `(<name>)` marker and a deterministic background color.
 *   **Networking**: The container's network namespace is unshared from the host (`--unshare-netns`) and attached to a **dedicated Podman NAT bridge** (`dbx-net-<name>`). This gives the container outbound internet access via NAT while keeping it off the host's default bridge network. The bridge persists and is cleaned up by `dbx-smith-rm`.
-*   **Home Dir**: Located at `~/boxes/<name>`. Host `~/.ssh` and other sensitive directories are not accessible from inside.
+*   **Home Dir (True tmpfs isolation)**: Identical to the Airgapped strategy. A `tmpfs` mount perfectly hides the host's `/home` directory from the container, ensuring absolute isolation while mapping only the `~/boxes/<name>` path.
 *   **Use Case**: Developing microservices or web apps that require a dedicated, non-clashing network segment or a reproducible private IP.
+
+### Hybrid Ghost Strategies (ghost-airgapped, ghost-isolated-net)
+*   **Visual**: A custom PS1 with a cyan `(<name>)` marker and a deterministic background color.
+*   **Identity**: Running `whoami` returns `ghostuser`.
+*   **Networking**: Inherits the exact networking behavior of their base strategy (Airgapped's severed connection, or Isolated-Net's NAT bridge).
+*   **Home Dir (True tmpfs isolation)**: Because `ghostuser` operates ephemerally, the host's `/home` is over-mounted with an empty `tmpfs`. The `/home/ghostuser` path is created purely inside the RAM disk. When the container stops, the ephemeral home is destroyed, ensuring zero trace is left on the host system.
+*   **Use Case**: Combining identity obfuscation with network and filesystem security.
 
 ---
 

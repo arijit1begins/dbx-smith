@@ -41,7 +41,7 @@ dbx-smith devbox
 ### 4. Tear it down
 
 ```bash
-dbx-smith-rm --purge devbox
+dbx-smith-rm --purge devbox my-other-box
 ```
 
 ## Strategies at a glance
@@ -49,9 +49,11 @@ dbx-smith-rm --purge devbox
 | Strategy | Isolation | Best for |
 | :--- | :--- | :--- |
 | `standard` | None — shares host home + network | Daily driver, normal development |
-| `airgapped` | Full network + home isolation | Sensitive code, untrusted scripts, private keys |
+| `airgapped` | Full network + true tmpfs home isolation | Sensitive code, untrusted scripts, private keys |
 | `ghost` | Identity only — different user + hostname | Permission-sensitive testing, clean-slate identity |
-| `isolated-net` | Home isolation + dedicated NAT bridge | Microservices, port-clashing services |
+| `isolated-net` | True tmpfs home isolation + dedicated NAT bridge | Microservices, port-clashing services |
+| `ghost-airgapped` | Zero network + ephemeral ghost identity | Secret testing without identity leaks |
+| `ghost-isolated-net` | NAT bridge + ephemeral ghost identity | Networked testing without identity leaks |
 
 See [Strategies](./strategies.md) for full details, technical breakdowns, and example commands.
 

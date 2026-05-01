@@ -2,24 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [1.3.1](https://github.com/arijit1begins/dbx-smith/compare/v1.3.0...v1.3.1) (2026-04-30)
-
-
-### Bug Fixes
-
-* **cli:** enforce home isolation in isolated-net and fix terminal color injection ([70d9dca](https://github.com/arijit1begins/dbx-smith/commit/70d9dca380d6adcdddd4b8a984cf44c264fcc493))
-
-## [1.3.0](https://github.com/arijit1begins/dbx-smith/compare/v1.2.0...v1.3.0) (2026-04-30)
-
+## [1.3.0] (2026-05-01)
 
 ### Features
 
-* enable manual workflow triggers and conditional documentation deployment based on path changes ([8be2813](https://github.com/arijit1begins/dbx-smith/commit/8be2813bea5baea5429610eac7c39ecbc8e922fa))
-
-
-### Bug Fixes
-
-* **cli:** replace distrobox enter with dbx-smith in creation output and improve UI ([16a2f1a](https://github.com/arijit1begins/dbx-smith/commit/16a2f1a5cab76b156678a91905f652d9e49f5021))
+* **core:** implement **True Tmpfs Home Isolation** (The Eclipse Hack) to bypass hardcoded Distrobox bind mounts for maximum security.
+* **core:** introduce **Hybrid Ghost Strategies** (`ghost-airgapped`, `ghost-isolated-net`) for transient identity obfuscation in airgapped environments.
+* **cli:** refactor `dbx-smith-rm` to support **Atomic Bulk Deletions** of multiple boxes and their associated infrastructure in a single command.
+* **ui:** resolve gibberish ANSI escape rendering in Zsh via **ANSI C Quoting** (`$'\e'`) injection.
+* **ui:** enforce standard `$` prompt terminator across Zsh and Bash for familiar developer experience.
+* **docs:** create comprehensive **FAQ documentation** covering architectural nuances, performance, and security mechanics.
+* **docs:** overhaul **Engineering Deep Dive** and **Architecture** documentation to align with state-of-the-art isolation techniques.
+* **test:** implement **Modular Test Matrix Runner** and synchronized CI pipeline for strategy validation.
 
 # [1.2.0](https://github.com/arijit1begins/dbx-smith/compare/v1.1.0...v1.2.0) (2026-04-28)
 

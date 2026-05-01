@@ -8,6 +8,13 @@ A professional-grade provisioning and management suite for **<a href="https://di
 📖 **[Full documentation →](https://arijit1begins.github.io/dbx-smith/docs/intro)**  
 📰 **[Read our Blog →](https://arijit1begins.github.io/dbx-smith/blog)**  
 📡 **[RSS Feed](https://arijit1begins.github.io/dbx-smith/blog/rss.xml)**
+## Features
+
+- **Strategic Isolation**: Provision boxes as `standard`, `airgapped`, `isolated-net`, `ghost`, or hybrid (`ghost-airgapped`, `ghost-isolated-net`).
+- **True Tmpfs Home Isolation**: Prevent host dotfile leaks in secure boxes by over-mounting the host's `/home` with an ephemeral RAM disk.
+- **Visual Identity**: Deterministic background colors and dynamic PS1/PROMPT injection based on container image.
+- **Zero-Drift Teardowns**: Atomic removal of containers, home directories, and NAT bridges.
+
 
 ## Compatibility
 

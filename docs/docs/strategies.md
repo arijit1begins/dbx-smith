@@ -11,9 +11,11 @@ DbxSmith uses **Strategies** as provisioning blueprints. A strategy is a named c
 | Strategy | Network | Home Dir | User | Hostname | Post-Init |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `standard` | Host-Bridge | Host `$HOME` | Host-User | Host hostname | PS1 & Theme Injection |
-| `airgapped` | **None** (post-sever) | `~/boxes/<name>` | Host-User | Host hostname | Temp-bridge → first-run bootstrap → bridge destruction |
-| `ghost` | Host-Bridge | Host `$HOME` | `ghostuser` | `ghost-shell` | `ghostuser` creation + PS1 & Theme Injection |
-| `isolated-net` | Dedicated NAT-Bridge | `~/boxes/<name>` | Host-User | Host hostname | NAT bridge creation + PS1 & Theme Injection |
+| `airgapped` | **None** (post-sever) | `~/boxes/<name>` (True tmpfs isolation) | Host-User | Host hostname | Temp-bridge → first-run bootstrap → bridge destruction |
+| `ghost` | Host-Bridge | `~/ghostuser` (ephemeral) | `ghostuser` | `ghost-shell` | `ghostuser` creation + PS1 & Theme Injection |
+| `isolated-net` | Dedicated NAT-Bridge | `~/boxes/<name>` (True tmpfs isolation) | Host-User | Host hostname | NAT bridge creation + PS1 & Theme Injection |
+| `ghost-airgapped` | **None** (post-sever) | `~/ghostuser` (ephemeral) | `ghostuser` | `ghost-shell` | `ghostuser` creation + zero network |
+| `ghost-isolated-net` | Dedicated NAT-Bridge | `~/ghostuser` (ephemeral) | `ghostuser` | `ghost-shell` | `ghostuser` creation + NAT bridge creation |
 
 ## Prerequisites
 
@@ -46,7 +48,7 @@ dbx-smith-spin standard devbox docker.io/library/ubuntu:latest dev
 
 **What changes:**
 - **Network**: Permanently severed after first-run bootstrap. `ping 8.8.8.8` returns "Network is unreachable". No bridge, no DNS, no external routing.
-- **Home Dir**: Isolated at `~/boxes/<name>` — host `~/.ssh`, `~/.gnupg`, and `.bash_history` are invisible from inside.
+- **Home Dir**: True tmpfs isolation. The host's `/home` is over-mounted with an empty `tmpfs`, and your custom home directory is cleanly mapped to `~/boxes/<name>`. Host `~/.ssh`, `~/.gnupg`, and `.bash_history` are completely inaccessible from inside.
 - **Two-phase provisioning**: A throwaway Podman network (`dbx-tmp-<name>`) is attached during `distrobox create` so packages can be installed. Once the first-run bootstrap completes, DbxSmith runs `podman network disconnect` then `podman network rm` — the bridge is permanently deleted.
 
 ```bash
@@ -63,7 +65,7 @@ dbx-smith-spin airgapped vault docker.io/library/alpine
 - **User**: `whoami` returns `ghostuser`. Created permanently inside the container via `useradd -m ghostuser`. The runtime (`dbx-smith`) automatically enters as this user — no manual flags needed.
 - **Hostname**: `hostname` returns `ghost-shell`.
 - **Network**: Host-bridge — full internet access.
-- **Home Dir**: Shared with host `$HOME` — the ghost user operates in your real home directory.
+- **Home Dir**: Ephemeral `~/.ghostuser`.
 
 ```bash
 dbx-smith-spin ghost tester docker.io/library/fedora
@@ -77,9 +79,27 @@ dbx-smith-spin ghost tester docker.io/library/fedora
 
 **What changes:**
 - **Network**: The container's network namespace is unshared from the host (`--unshare-netns`) and attached to a dedicated Podman NAT bridge (`dbx-net-<name>`). Outbound internet works via NAT; the container is off the host's default bridge.
-- **Home Dir**: Isolated at `~/boxes/<name>` — host sensitive directories not accessible.
+- **Home Dir**: True tmpfs isolation. The host's `/home` is over-mounted with an empty `tmpfs`, and your custom home directory is cleanly mapped to `~/boxes/<name>`. Host `~/.ssh`, `~/.gnupg`, and `.bash_history` are completely inaccessible from inside.
 - **Bridge lifecycle**: The `dbx-net-<name>` network persists until `dbx-smith-rm` is explicitly run.
 
 ```bash
 dbx-smith-spin isolated-net microservice docker.io/library/debian
+```
+
+---
+
+## Hybrid Ghost Strategies
+
+**Scenario:** You need the identity obfuscation of `ghost`, but *also* require strict network or home directory isolation.
+
+### `ghost-airgapped`
+Combines the `ghostuser` identity with a zero-network vault. Uses true `tmpfs` home isolation so the host's home is invisible, and creates an ephemeral `/home/ghostuser` for the session.
+```bash
+dbx-smith-spin ghost-airgapped secret_test alpine:latest
+```
+
+### `ghost-isolated-net`
+Combines the `ghostuser` identity with a dedicated NAT bridge. Like `ghost-airgapped`, uses true `tmpfs` home isolation to prevent host dotfile leaks.
+```bash
+dbx-smith-spin ghost-isolated-net isolated_tester ubuntu:latest
 ```

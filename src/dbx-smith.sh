@@ -82,12 +82,16 @@ _DBX_ALIAS_DIR="$_DBX_CONFIG_HOME/aliases.d"
 
 if [[ -d "$_DBX_ALIAS_DIR" ]]; then
     if [[ -n "${ZSH_VERSION:-}" ]]; then
-        for fragment in "$_DBX_ALIAS_DIR"/*.sh(N); do
+        # We use eval here so bash's parser doesn't choke on zsh's (N) nullglob syntax
+        eval 'for fragment in "$_DBX_ALIAS_DIR"/*.sh(N); do
             [[ -r "$fragment" && -s "$fragment" ]] && source "$fragment"
-        done
+        done'
     elif [[ -n "${BASH_VERSION:-}" ]]; then
         for fragment in "$_DBX_ALIAS_DIR"/*.sh; do
             [[ -r "$fragment" && -s "$fragment" ]] && source "$fragment"
         done
     fi
 fi
+
+true
+

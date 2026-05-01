@@ -10,7 +10,7 @@ dbx-smith-rm is the atomic destructor for Distrobox containers and their associa
 
 # SYNOPSIS
 
-**dbx-smith-rm** [options] <box_name>
+**dbx-smith-rm** [options] <box_name> [box_name_2 ...]
 
 	--help/-h:		show this help message
 	--purge/-p:		Deep clean: Purge container, isolated home dir, registry manifest,

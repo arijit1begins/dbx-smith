@@ -123,8 +123,9 @@ sequenceDiagram
 ```mermaid
 %%{init: {"themeVariables": {"fontSize": "16px"}}}%%
 graph TD
-    Start([dbx-smith-rm target]) --> Parse[Parse flags: --purge and target name]
-    Parse --> Exist{Box exists?}
+    Start([dbx-smith-rm targets...]) --> Parse[Parse flags: --purge and targets]
+    Parse --> Loop[For each target in targets]
+    Loop --> Exist{Box exists?}
     Exist --> |Yes| Stop[distrobox stop --yes]
     Exist --> |No| CleanupFS[Cleanup registry and aliases]
     Stop --> Remove[distrobox rm --yes]
@@ -137,8 +138,10 @@ graph TD
     Net --> |No| Purge{--purge flag?}
     DelNet --> Purge
     Purge --> |Yes| DelVol[podman volume rm target_home]
-    Purge --> |No| End([Teardown complete])
-    DelVol --> End
+    Purge --> |No| NextTarget[Next target]
+    DelVol --> NextTarget
+    NextTarget --> Loop
+    NextTarget -.-> |All targets processed| End([Teardown complete])
 ```
 
 ---
@@ -184,3 +187,33 @@ distrobox list --no-color | awk -v name="$name" 'NR>1 && $3==name {found=1} END 
 ```
 
 Used in `spin` (duplicate guard), `runtime` (existence check), and `rm` (target validation).
+
+### 4. True Tmpfs Home Isolation (The Eclipse Hack)
+
+Distrobox enforces a strict behavior: it *always* bind-mounts the host's default home directory (e.g., `/home/username`) into the container. Even if you pass a custom `--home ~/boxes/mybox` flag, Distrobox maps your root `/home` into the container, exposing SSH keys and `.bash_history`.
+
+**The Naive Failure:**
+If we attempt to forcibly remove it (`umount /home`) via an init-hook, Distrobox often crashes or throws permission errors because its internal bootstrapping relies on that path existing. We cannot fight Distrobox to *remove* the mount.
+
+**Solution: The Eclipse (Over-mounting)**
+Instead of removing it, DbxSmith uses a Linux trick: **Over-mounting**. When you mount a filesystem onto a directory that already contains files, the original contents become completely "eclipsed" or hidden underneath the new mount. 
+
+DbxSmith injects a multi-stage `tmpfs` hack via `init-hooks` *before* the container shell starts:
+
+```bash
+# 1. Save the intended custom home directory
+mkdir -p /tmp/save_home 
+mount --bind "$HOME_BASE/$name" /tmp/save_home 
+
+# 2. THE ECLIPSE: Obliterate host visibility by over-mounting /home entirely in RAM
+mount -t tmpfs tmpfs /home 
+
+# 3. Restore ONLY the custom home directory back into the empty RAM disk
+mkdir -p "$HOME_BASE/$name"
+mount --bind /tmp/save_home "$HOME_BASE/$name" 
+umount /tmp/save_home
+```
+
+The new, empty `tmpfs` RAM disk is placed directly *on top* of `/home`. The host's `/home` still technically exists underneath, but it is now 100% inaccessible to any user or process inside the container. We bypass the hardcoded volume mapping without breaking the container lifecycle.
+
+For **Ghost** strategies, it is even simpler: the `tmpfs` is mounted over `/home`, and then `/home/ghostuser` is created ephemerally inside the RAM disk. When the container halts, the RAM disk evaporates, guaranteeing zero traces are left on the host.

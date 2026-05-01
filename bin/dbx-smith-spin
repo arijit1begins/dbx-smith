@@ -6,7 +6,7 @@
 #   (standard, airgapped, ghost, isolated-net). Generates custom profiles, networking,
 #   and dynamic shell integrations.
 
-readonly VERSION="1.3.1"
+readonly VERSION="1.3.0"
 readonly HOME_BASE="${HOME}/boxes"
 readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
 readonly ALIAS_DIR="${CONFIG_DIR}/aliases.d"
@@ -18,23 +18,12 @@ usage() {
 Usage: dbx-smith-spin [options] [strategy] [name] [image] [alias] [bindkey]
 
 Strategies:
-  standard      Frictionless, host-mirrored daily driver environment.
-  airgapped     Zero-network vault with an isolated, private home directory.
-  ghost         Identity obfuscation running as a transient user ('ghostuser').
-  isolated-net  Secure sandbox with a dedicated, host-blind NAT bridge network.
-
-Arguments:
-  name          Unique identifier for your Distrobox container.
-  image         Container image to use (e.g., docker.io/library/alpine).
-  alias         (Optional) Shell alias to bind (e.g., 'vault').
-  bindkey       (Optional) Zsh/Bash hotkey to bind (e.g., '^G').
-
-Options:
-  -h, --help    Show this comprehensive help message
-  -v, --version Show the current dbx-smith-spin version
-
-For more detailed information and examples, refer to the manual:
-  man dbx-smith-spin
+  standard            Frictionless, host-mirrored daily driver environment.
+  airgapped           Zero-network vault with an isolated, private home directory.
+  ghost               Identity obfuscation running as a transient user ('ghostuser').
+  isolated-net        Secure sandbox with a dedicated, host-blind NAT bridge network.
+  ghost-airgapped     Combined: Transient 'ghostuser' identity with zero network.
+  ghost-isolated-net  Combined: Transient 'ghostuser' identity with NAT bridge network.
 EOF
 }
 
@@ -128,7 +117,7 @@ main() {
 
     if [[ $# -eq 0 ]]; then
         while [[ -z "${strategy:-}" ]]; do
-            read -r -p "Strategy (standard/airgapped/ghost/isolated-net): " strategy || exit 130
+            read -r -p "Strategy (standard/airgapped/ghost/isolated-net/ghost-airgapped/ghost-isolated-net): " strategy || exit 130
         done
         while [[ -z "${name:-}" ]]; do
             read -r -p "Box Name: " name || exit 130
@@ -165,11 +154,11 @@ main() {
     script_payload=$(cat <<EOF
 mkdir -p /etc/profile.d
 cat << INNER_EOF > /etc/profile.d/dbx-smith-env.sh
-echo -ne '${OSC_BG_SET}${color}\007'
+# Standardise prompt terminator to $ or # while enforcing ANSI C escape for Zsh/Bash integrity
 if [ -n "\\\${ZSH_VERSION:-}" ]; then
-    export PS1="%F{cyan}($name)%f %F{green}%n@%m%f:%F{blue}%~%f%# "
+    export PROMPT=\\\$'\\\\%{\\\\e]11;${color}\\\\a\\\\%}\\\\F{cyan}($name)\\\\f \\\\F{green}%n@%m\\\\f:\\\\F{blue}%~\\\\f%(!.#.$) '
 else
-    export PS1="\\\[\\\033[36m\\\]($name)\\\[\\\033[0m\\\] \\\[\\\033[32m\\\]\\\u@\\\h\\\[\\\033[0m\\\]:\\\[\\\033[34m\\\]\\\w\\\[\\\033[0m\\\]\\\\\\\$ "
+    export PS1="\\\[\\\033]11;${color}\\\a\\\]\\\[\\\033[36m\\\]($name)\\\[\\\033[0m\\\] \\\[\\\033[32m\\\]\\\u@\\\h\\\[\\\033[0m\\\]:\\\[\\\033[34m\\\]\\\w\\\[\\\033[0m\\\]\\\\\\\$ "
 fi
 INNER_EOF
 
@@ -179,6 +168,14 @@ for zfile in /etc/zshrc /etc/zsh/zshrc; do
     if [ -d "\$zdir" ]; then
         touch "\$zfile"
         grep -q "dbx-smith-env.sh" "\$zfile" || echo "source /etc/profile.d/dbx-smith-env.sh" >> "\$zfile"
+    fi
+done
+
+# Bootstrap empty dotfiles to prevent Zsh newuser-wizard from freezing entry
+for user_home in /home/*; do
+    if [ -d "\$user_home" ]; then
+        touch "\$user_home/.zshrc" "\$user_home/.bashrc"
+        chown -R \$(basename "\$user_home"):\$(basename "\$user_home") "\$user_home" 2>/dev/null || true
     fi
 done
 EOF
@@ -195,7 +192,8 @@ EOF
             ;;
         airgapped)
             podman network inspect "dbx-tmp-${name}" >/dev/null 2>&1 || podman network create "dbx-tmp-${name}" >/dev/null
-            dbx_flags+=(--home "$HOME_BASE/$name" --unshare-all --additional-flags "--network dbx-tmp-${name}" --init-hooks "$init_hook")
+            local isolate_hook="mkdir -p /tmp/save_home && mount --bind \"$HOME_BASE/$name\" /tmp/save_home && mount -t tmpfs tmpfs /home && mkdir -p \"$HOME_BASE/$name\" && mount --bind /tmp/save_home \"$HOME_BASE/$name\" && umount /tmp/save_home"
+            dbx_flags+=(--home "$HOME_BASE/$name" --unshare-all --additional-flags "--network dbx-tmp-${name}" --init-hooks "$isolate_hook; $init_hook")
             ;;
         ghost)
             local ghost_hook
@@ -205,7 +203,20 @@ EOF
         isolated-net)
             # Create podman network if missing
             podman network inspect "dbx-net-${name}" >/dev/null 2>&1 || podman network create "dbx-net-${name}" >/dev/null
-            dbx_flags+=(--home "$HOME_BASE/$name" --unshare-all --additional-flags "--network dbx-net-${name}" --init-hooks "$init_hook")
+            local isolate_hook="mkdir -p /tmp/save_home && mount --bind \"$HOME_BASE/$name\" /tmp/save_home && mount -t tmpfs tmpfs /home && mkdir -p \"$HOME_BASE/$name\" && mount --bind /tmp/save_home \"$HOME_BASE/$name\" && umount /tmp/save_home"
+            dbx_flags+=(--home "$HOME_BASE/$name" --unshare-all --additional-flags "--network dbx-net-${name}" --init-hooks "$isolate_hook; $init_hook")
+            ;;
+        ghost-airgapped)
+            podman network inspect "dbx-tmp-${name}" >/dev/null 2>&1 || podman network create "dbx-tmp-${name}" >/dev/null
+            local isolate_hook="mount -t tmpfs tmpfs /home && mkdir -p /home/$USER"
+            local ghost_hook="id ghostuser &>/dev/null || (useradd -m ghostuser && usermod -aG wheel ghostuser 2>/dev/null || true && usermod -aG sudo ghostuser 2>/dev/null || true); $init_hook"
+            dbx_flags+=(--hostname "ghost-shell" --unshare-all --additional-flags "--network dbx-tmp-${name}" --init-hooks "$isolate_hook; $ghost_hook")
+            ;;
+        ghost-isolated-net)
+            podman network inspect "dbx-net-${name}" >/dev/null 2>&1 || podman network create "dbx-net-${name}" >/dev/null
+            local isolate_hook="mount -t tmpfs tmpfs /home && mkdir -p /home/$USER"
+            local ghost_hook="id ghostuser &>/dev/null || (useradd -m ghostuser && usermod -aG wheel ghostuser 2>/dev/null || true && usermod -aG sudo ghostuser 2>/dev/null || true); $init_hook"
+            dbx_flags+=(--hostname "ghost-shell" --unshare-all --additional-flags "--network dbx-net-${name}" --init-hooks "$isolate_hook; $ghost_hook")
             ;;
         *)
             echo "Error: Unknown strategy '$strategy'." >&2

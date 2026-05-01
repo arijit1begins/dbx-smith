@@ -19,7 +19,7 @@ By participating in this project, you agree to abide by our Code of Conduct. (TL
 ### 3. Contributing Code
 1. Fork the repo and create your branch from `main`.
 2. Install dependencies: `make install`.
-3. If you've added code that should be tested, add or update tests in `test_strategies.sh`.
+3. If you've added code that should be tested, add or update tests in the `tests/` directory and ensure `./test.sh --full` passes.
 4. Ensure your code passes linting: `shellcheck bin/* src/*.sh`.
 5. Submit a Pull Request.
 
@@ -64,7 +64,7 @@ We use **Semantic Release**. Please follow the [Conventional Commits](https://ww
 Our CI/CD orchestration is consolidated into `.github/workflows/pipeline.yml`, ensuring a streamlined and predictable release flow:
 - **CI Job (Continuous Integration)**: 
   - Runs **ShellCheck** on all binaries and core scripts.
-  - Executes **`test_strategies.sh`**, validating all isolation strategies in real containers.
+  - Executes **`./test.sh --full`**, validating all isolation strategies across a matrix of containers.
   - Triggered on every Push and Pull Request to `main`.
 - **Release Job (GitHub Release)**:
   - Triggered **ONLY** on pushed Git tags (e.g., `v1.2.3`).
@@ -94,7 +94,7 @@ We follow a **Local-First, Tag-Driven Release Strategy**. GitHub Actions **NEVER
 ### Testing Locally
 Before submitting a PR, please run the following:
 1. **Linting**: `shellcheck bin/* src/*.sh`
-2. **Strategy Tests**: `./test_strategies.sh` (Requires `podman` and `distrobox` installed on your host).
+2. **Strategy Tests**: `./test.sh --full` (Requires `podman` and `distrobox` installed on your host).
 3. **Docs Build**: `cd docs && npm run build`
 
 ## Questions?

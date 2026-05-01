@@ -9,13 +9,19 @@ set -euo pipefail
 # Ensure binaries are in PATH
 export PATH="${PREFIX:-$HOME/.local}/bin:$PATH"
 
+# Ensure we have the latest core sourced
+source "$HOME/.config/dbx-smith/dbx-smith.sh"
+
+TEST_IMAGE="${1:-docker.io/library/alpine}"
+
 make install >/dev/null
 
 echo "========================================"
 echo " Starting Automated Strategy Tests"
+echo " Target Image: $TEST_IMAGE"
 echo "========================================"
 
-strategies=("standard" "airgapped" "ghost" "isolated-net")
+strategies=("standard" "airgapped" "ghost" "isolated-net" "ghost-isolated-net" "ghost-airgapped")
 
 for strat in "${strategies[@]}"; do
     box_name="test_${strat}"
@@ -26,7 +32,7 @@ for strat in "${strategies[@]}"; do
 
     # 2. Provision
     echo "[*] Provisioning $box_name..."
-    dbx-smith-spin "$strat" "$box_name" docker.io/library/alpine >/dev/null
+    dbx-smith-spin "$strat" "$box_name" "$TEST_IMAGE" >/dev/null
 
     # 3. Validation: Check if it exists in list
     if ! distrobox list --no-color | awk -v b="$box_name" 'NR>1 && $3==b {found=1} END {exit !found}'; then
@@ -37,7 +43,7 @@ for strat in "${strategies[@]}"; do
 
     # 4. Validation: Test Profile Injection
     echo "[*] Checking Profile Injection..."
-    if distrobox enter "$box_name" -- sh -c 'cat /etc/profile.d/dbx-smith-env.sh' | grep -q "export PS1="; then
+    if (cd / && distrobox enter "$box_name" -- sh -c 'cat /etc/profile.d/dbx-smith-env.sh') | grep -q "export PS1="; then
         echo "[*] Validation Passed: UI Theme payload injected successfully."
     else
         echo "[!] ERROR: UI Theme payload missing!"
@@ -45,9 +51,9 @@ for strat in "${strategies[@]}"; do
     fi
 
     # 5. Validation: Network Boundary Checks
-    if [[ "$strat" == "airgapped" ]]; then
+    if [[ "$strat" == "airgapped" || "$strat" == "ghost-airgapped" ]]; then
         echo "[*] Testing Airgap strict isolation..."
-        if distrobox enter "$box_name" -- ping -c 1 -W 1 8.8.8.8 >/dev/null 2>&1; then
+        if (cd / && distrobox enter "$box_name" -- ping -c 1 -W 1 8.8.8.8 >/dev/null 2>&1); then
             echo "[!] ERROR: Airgapped container has internet access!"
             exit 1
         else
@@ -55,7 +61,7 @@ for strat in "${strategies[@]}"; do
         fi
     fi
 
-    if [[ "$strat" == "isolated-net" ]]; then
+    if [[ "$strat" == "isolated-net" || "$strat" == "ghost-isolated-net" ]]; then
         echo "[*] Testing isolated-net bridge exists..."
         if podman network inspect "dbx-net-${box_name}" >/dev/null 2>&1; then
             echo "[*] Validation Passed: Isolated bridge network is active."

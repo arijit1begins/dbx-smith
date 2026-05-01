@@ -6,7 +6,7 @@
 #   infrastructure including isolated home directories, podman networks, and aliases.
 
 usage() {
-    echo "Usage: dbx-smith-rm [options] <box_name>"
+    echo "Usage: dbx-smith-rm [options] <box_name> [box_name_2 ...]"
     echo "An atomic destructor for Distrobox containers and associated infrastructure."
     echo ""
     echo "Options:"
@@ -24,7 +24,7 @@ main() {
     trap 'echo "Error encountered during teardown."; exit 1' ERR
 
     local purge_volume=0
-    local target=""
+    local targets=()
 
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -42,18 +42,13 @@ main() {
                 exit 1
                 ;;
             *)
-                if [[ -n "$target" ]]; then
-                    echo "Only one target supported at a time." >&2
-                    usage >&2
-                    exit 1
-                fi
-                target="$1"
+                targets+=("$1")
                 shift
                 ;;
         esac
     done
 
-    if [[ -z "$target" ]]; then
+    if [[ ${#targets[@]} -eq 0 ]]; then
         usage >&2
         exit 1
     fi
@@ -63,33 +58,37 @@ main() {
     local ALIAS_DIR="${CONFIG_DIR}/aliases.d"
     local REG_DIR="${CONFIG_DIR}/registry"
 
-    # Exact match validation using default whitespace tokenization
-    if distrobox list --no-color | awk -v t="$target" 'NR>1 && $3==t {found=1} END {exit !found}'; then
-        echo "Stopping distrobox '$target'..."
-        distrobox stop "$target" --yes 2>/dev/null || true
-        echo "Removing distrobox '$target'..."
-        distrobox rm "$target" --yes
-    else
-        echo "Distrobox '$target' not found or not created by distrobox."
-    fi
+    for target in "${targets[@]}"; do
+        echo "========================================"
+        echo "Tearing down '$target'..."
+        # Exact match validation using default whitespace tokenization
+        if distrobox list --no-color | awk -v t="$target" 'NR>1 && $3==t {found=1} END {exit !found}'; then
+            echo "Stopping distrobox '$target'..."
+            distrobox stop "$target" --yes 2>/dev/null || true
+            echo "Removing distrobox '$target'..."
+            distrobox rm "$target" --yes
+        else
+            echo "Distrobox '$target' not found or not created by distrobox."
+        fi
 
-    # Cleanup filesystem
-    [[ -d "$HOME_BASE/$target" ]] && rm -rf "${HOME_BASE:?}/${target:?}" && echo "Removed isolated home directory."
-    [[ -f "$ALIAS_DIR/${target}.sh" ]] && rm -f "$ALIAS_DIR/${target}.sh" && echo "Removed alias fragment."
-    [[ -f "$REG_DIR/${target}.conf" ]] && rm -f "$REG_DIR/${target}.conf" && echo "Removed registry manifest."
+        # Cleanup filesystem
+        [[ -d "$HOME_BASE/$target" ]] && rm -rf "${HOME_BASE:?}/${target:?}" && echo "Removed isolated home directory."
+        [[ -f "$ALIAS_DIR/${target}.sh" ]] && rm -f "$ALIAS_DIR/${target}.sh" && echo "Removed alias fragment."
+        [[ -f "$REG_DIR/${target}.conf" ]] && rm -f "$REG_DIR/${target}.conf" && echo "Removed registry manifest."
 
-    # Clean up isolated network if it exists
-    if podman network inspect "dbx-net-${target}" >/dev/null 2>&1; then
-        echo "Removing isolated network bridge..."
-        podman network rm "dbx-net-${target}" >/dev/null 2>&1 || true
-    fi
+        # Clean up isolated network if it exists
+        if podman network inspect "dbx-net-${target}" >/dev/null 2>&1; then
+            echo "Removing isolated network bridge..."
+            podman network rm "dbx-net-${target}" >/dev/null 2>&1 || true
+        fi
 
-    if (( purge_volume )); then
-        echo "Purging Podman volume..."
-        podman volume rm "${target}_home" 2>/dev/null || true
-    fi
+        if (( purge_volume )); then
+            echo "Purging Podman volume..."
+            podman volume rm "${target}_home" 2>/dev/null || true
+        fi
 
-    echo "Teardown complete for '$target'."
+        echo "Teardown complete for '$target'."
+    done
 }
 
 main "$@"
