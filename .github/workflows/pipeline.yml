@@ -14,6 +14,11 @@ env:
 jobs:
   ci:
     name: Continuous Integration
+    # Skip branch-push CI if we are also triggering via tag push to avoid duplicates
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'push' && github.ref_type == 'tag') ||
+      (github.event_name == 'push' && github.ref_name == 'main' && !contains(github.event.head_commit.message, '[skip ci]'))
     runs-on: ubuntu-latest
     outputs:
       docs: ${{ steps.filter.outputs.docs }}
@@ -44,7 +49,7 @@ jobs:
           sudo apt-get install -y podman
           curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
       
-      - name: Run Strategy Tests
+      - name: Run Full Strategy Test Matrix
         run: ./test.sh
         env:
           PREFIX: ${{ github.workspace }}/.local

@@ -19,10 +19,10 @@ echo "========================================"
 echo " Unit Tests Passed!"
 echo "========================================"
 
-if [[ "${1:-}" == "--full" ]]; then
+if [[ "${1:-}" == "--full" ]] || [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
     echo "Running Full Integration Matrix..."
     bash tests/04_matrix_runner.sh
 else
-    echo "Skipping integration tests. Use './test.sh --full' to run the matrix."
+    echo "Skipping integration tests. Use './test.sh --full' to run the matrix (or run in CI)."
 fi
 
