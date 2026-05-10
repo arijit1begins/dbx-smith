@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 
 # Helper for ghost user creation
 _create_ghostuser() {
-    local name="$1"
+    local name
+    name="$1"
     echo "Creating ghostuser identity inside '$name'..."
     podman exec --user root --workdir / "$name" bash -c '
         if ! id ghostuser >/dev/null 2>&1; then
@@ -29,8 +31,10 @@ _create_ghostuser() {
 }
 
 strategy_ghost_get_flags() {
-    local name="$1" image="$2" payload="$3"
-    local init_hook="echo '$payload' | base64 -d | sh"
+    local name
+    name="$1" image="$2" payload="$3"
+    local init_hook
+    init_hook="echo '$payload' | base64 -d | sh"
 
     local _su_install_script
     _su_install_script=$(cat <<SU_EOF
@@ -41,11 +45,13 @@ SU_EOF
     local su_install_hook
     su_install_hook="echo '$(printf '%s' "$_su_install_script" | base64 | tr -d '\n')' | base64 -d | bash"
 
+    # shellcheck disable=SC2034
     DBX_FLAGS=(--name "$name" --image "$image" --hostname ghost-shell --init-hooks "$su_install_hook; $init_hook")
 }
 
 strategy_ghost_finalize() {
-    local name="$1" strategy="$2" image="$3" usr_alias="$4" usr_bind="$5"
+    local name
+    name="$1" strategy="$2" image="$3" usr_alias="$4" usr_bind="$5"
 
     echo "Ghost strategy detected. Bootstrapping container..."
     distrobox enter --no-workdir "$name" -- true >/dev/null 2>&1 || true

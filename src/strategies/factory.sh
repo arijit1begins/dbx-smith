@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 
 # Strategy Factory
 strategy_factory() {
-    local strategy_name="$1"
-    local strategy_file="${SRC_DIR}/strategies/${strategy_name}.sh"
+    local strategy_name
+    strategy_name="$1"
+    local strategy_file
+    strategy_file="${SRC_DIR}/strategies/${strategy_name}.sh"
 
     if [[ -f "$strategy_file" ]]; then
         # shellcheck source=/dev/null

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 # dbx-smith.sh - DbxSmith Runtime Core (Bash/Zsh Compatible)
 #
 # DESCRIPTION:
@@ -18,7 +19,8 @@ else
 fi
 
 dbx-smith() {
-    local box="$1"
+    local box
+    box="$1"
     [[ -z "$box" ]] && { echo "usage: dbx-smith <box_name> [args...]"; return 1; }
 
     # Pre-flight existence validation using awk's default whitespace tokenization ($3 is NAME)
@@ -30,7 +32,8 @@ dbx-smith() {
     fi
 
     # Read manifest if exists to determine strategy-specific enter flags
-    local enter_args=()
+    local enter_args
+    enter_args=()
     if [[ -f "$REG_DIR/${box}.conf" ]]; then
         local strategy
         strategy=$(grep "^STRATEGY=" "$REG_DIR/${box}.conf" | cut -d= -f2)
@@ -51,7 +54,8 @@ dbx-smith() {
     trap 'if [[ -t 1 ]]; then printf "\033]111\007\033]11;#000000\007"; fi' EXIT INT TERM
 
     distrobox enter "${enter_args[@]}" "$box" "${@:2}"
-    local exit_code=$?
+    local exit_code
+    exit_code=$?
     
     # Explicit reset after clean exit
     if [[ -t 1 ]]; then
@@ -63,8 +67,10 @@ dbx-smith() {
 }
 
 _dbx_comp_lazy() {
-    local CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/dbx-smith"
-    local CACHE_FILE="$CACHE_DIR/comp.db"
+    local CACHE_DIR
+    CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/dbx-smith"
+    local CACHE_FILE
+    CACHE_FILE="$CACHE_DIR/comp.db"
     
     if ! command -v distrobox >/dev/null 2>&1; then
         return 0
@@ -76,7 +82,8 @@ _dbx_comp_lazy() {
         distrobox list --no-color | awk 'NR>1 {print $3}' > "$CACHE_FILE" 2>/dev/null || true
     fi
 
-    local boxes=()
+    local boxes
+    boxes=()
     if [[ -f "$CACHE_FILE" ]]; then
         mapfile -t boxes < "$CACHE_FILE"
     fi
@@ -84,7 +91,8 @@ _dbx_comp_lazy() {
     if [[ -n "${ZSH_VERSION:-}" ]]; then
         compadd -a boxes
     elif [[ -n "${BASH_VERSION:-}" ]]; then
-        local cur="${COMP_WORDS[COMP_CWORD]}"
+        local cur
+    cur="${COMP_WORDS[COMP_CWORD]}"
         # shellcheck disable=SC2207
         COMPREPLY=( $(compgen -W "${boxes[*]}" -- "$cur") )
     fi

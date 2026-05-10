@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 
 # generate_init_payload: Creates the base64 encoded payload for container initialization
 # Dependencies: Requires DISTRO_* variables to be set (Dependency Injection)
 generate_init_payload() {
-    local name="$1"
-    local color="$2"
+    local name
+    name="$1"
+    local color
+    color="$2"
 
     # Default values if not injected
-    local zshrc="${DISTRO_ZSHRC:-/etc/zshrc}"
-    local bashrc="${DISTRO_BASHRC:-/etc/bash.bashrc}"
+    local zshrc
+    zshrc="${DISTRO_ZSHRC:-/etc/zshrc}"
+    local bashrc
+    bashrc="${DISTRO_BASHRC:-/etc/bash.bashrc}"
 
     local script_payload
     script_payload=$(cat << EOF

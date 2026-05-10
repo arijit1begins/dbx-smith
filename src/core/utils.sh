@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 
 # bootstrap: Ensures environment and dependencies are met
 bootstrap() {
@@ -19,7 +20,8 @@ bootstrap() {
 
 # get_color: Generates a deterministic color based on image name
 get_color() {
-    local img="$1"
+    local img
+    img="$1"
     local hash
     hash=$(echo "$img" | cksum | awk '{print $1}')
     printf "#%02x%02x%02x" $(( (hash % 60) + 20 )) $(( ((hash / 100) % 60) + 20 )) $(( ((hash / 10000) % 60) + 20 ))
@@ -27,10 +29,14 @@ get_color() {
 
 # register_shortcuts: Creates alias and bindkey fragments
 register_shortcuts() {
-    local name="$1"
-    local usr_alias="$2"
-    local usr_bind="$3"
-    local fragment="$ALIAS_DIR/${name}.sh"
+    local name
+    name="$1"
+    local usr_alias
+    usr_alias="$2"
+    local usr_bind
+    usr_bind="$3"
+    local fragment
+    fragment="$ALIAS_DIR/${name}.sh"
 
     true > "$fragment"
     if [[ -n "$usr_alias" ]]; then
@@ -57,8 +63,10 @@ EOF
 
 # write_manifest: Records container metadata
 write_manifest() {
-    local name="$1" strategy="$2" image="$3"
-    local manifest="$REG_DIR/${name}.conf"
+    local name
+    name="$1" strategy="$2" image="$3"
+    local manifest
+    manifest="$REG_DIR/${name}.conf"
     cat <<EOF > "$manifest"
 NAME=$name
 STRATEGY=$strategy

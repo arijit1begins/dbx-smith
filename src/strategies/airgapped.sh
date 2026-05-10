@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 
 strategy_airgapped_get_flags() {
-    local name="$1" image="$2" payload="$3"
-    local init_hook="echo '$payload' | base64 -d | sh"
+    local name
+    name="$1" image="$2" payload="$3"
+    local init_hook
+    init_hook="echo '$payload' | base64 -d | sh"
 
-    local isolate_hook="\
+    local isolate_hook
+    isolate_hook="\
 mkdir -p /tmp/save_home \
 && mount --bind \"$HOME_BASE/$name\" /tmp/save_home \
 && mount -t tmpfs tmpfs /home \
@@ -16,7 +20,8 @@ mkdir -p /tmp/save_home \
 && chmod 0440 /etc/sudoers 2>/dev/null || true \
 && chmod 4755 /usr/bin/sudo /usr/sbin/sudo 2>/dev/null || true"
 
-    local airgap_hook="\
+    local airgap_hook
+    airgap_hook="\
 if [ -f /etc/dbx_airgap_active ]; then \
     for iface in \$(ls /sys/class/net/ 2>/dev/null); do \
         if [ \"\$iface\" != \"lo\" ]; then \
@@ -25,11 +30,13 @@ if [ -f /etc/dbx_airgap_active ]; then \
     done; \
 fi"
 
+    # shellcheck disable=SC2034
     DBX_FLAGS=(--name "$name" --image "$image" --home "$HOME_BASE/$name" --unshare-all --init-hooks "$isolate_hook; $airgap_hook; $init_hook")
 }
 
 strategy_airgapped_finalize() {
-    local name="$1" strategy="$2" image="$3" usr_alias="$4" usr_bind="$5"
+    local name
+    name="$1" strategy="$2" image="$3" usr_alias="$4" usr_bind="$5"
 
     echo "Airgapped strategy detected. Bootstrapping container with temporary internet access..."
     distrobox enter --no-workdir "$name" -- true >/dev/null 2>&1 || true

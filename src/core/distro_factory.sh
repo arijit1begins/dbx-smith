@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
+# shellcheck shell=bash
 
 distro_factory() {
-    local image="$1"
+    local image
+    image="$1"
     if [[ "$image" == *"ubuntu"* || "$image" == *"debian"* ]]; then
         # shellcheck source=src/distros/ubuntu.sh
         source "${SRC_DIR}/distros/ubuntu.sh"

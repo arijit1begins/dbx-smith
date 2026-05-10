@@ -16,6 +16,7 @@ fi
 readonly SRC_DIR
 
 # shellcheck source=src/core/constants.sh
+# shellcheck disable=SC1091
 source "${SRC_DIR}/core/constants.sh"
 
 usage() {
