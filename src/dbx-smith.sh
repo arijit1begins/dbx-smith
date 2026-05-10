@@ -35,8 +35,8 @@ dbx-smith() {
     local enter_args
     enter_args=()
     if [[ -f "$REG_DIR/${box}.conf" ]]; then
-        local strategy
-        strategy=$(grep "^STRATEGY=" "$REG_DIR/${box}.conf" | cut -d= -f2)
+        local STRATEGY d strategy
+    strategy=$(grep "^STRATEGY=" "$REG_DIR/${box}.conf" | cut -d= -f2)
         if [[ "$strategy" == ghost* ]]; then
             enter_args+=(--no-workdir --additional-flags "--user ghostuser --workdir /home/ghostuser --env HOME=/home/ghostuser")
         elif [[ "$strategy" == "airgapped" || "$strategy" == "isolated-net" ]]; then

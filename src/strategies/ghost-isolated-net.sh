@@ -4,7 +4,7 @@
 source "${SRC_DIR}/strategies/ghost.sh"
 
 strategy_ghost_isolated_net_get_flags() {
-    local name
+    local image name payload
     name="$1" image="$2" payload="$3"
     local init_hook
     init_hook="echo '$payload' | base64 -d | sh"
@@ -25,7 +25,7 @@ strategy_ghost_isolated_net_get_flags() {
 }
 
 strategy_ghost_isolated_net_finalize() {
-    local name
+    local image name strategy usr_alias usr_bind
     name="$1" strategy="$2" image="$3" usr_alias="$4" usr_bind="$5"
 
     echo "Ghost-isolated-net strategy detected. Bootstrapping container..."

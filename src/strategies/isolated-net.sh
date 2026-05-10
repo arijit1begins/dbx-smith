@@ -2,7 +2,7 @@
 # shellcheck shell=bash
 
 strategy_isolated_net_get_flags() {
-    local name
+    local image name payload
     name="$1" image="$2" payload="$3"
     local init_hook
     init_hook="echo '$payload' | base64 -d | sh"
@@ -24,7 +24,7 @@ mkdir -p /tmp/save_home \
 }
 
 strategy_isolated_net_finalize() {
-    local name
+    local image name strategy usr_alias usr_bind
     name="$1" strategy="$2" image="$3" usr_alias="$4" usr_bind="$5"
 
     echo "Isolated-net strategy detected. Bootstrapping container..."

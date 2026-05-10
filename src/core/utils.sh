@@ -63,7 +63,7 @@ EOF
 
 # write_manifest: Records container metadata
 write_manifest() {
-    local name
+    local image name strategy
     name="$1" strategy="$2" image="$3"
     local manifest
     manifest="$REG_DIR/${name}.conf"
