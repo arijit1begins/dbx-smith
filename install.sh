@@ -52,14 +52,14 @@ elif [[ -n "${BASH_VERSION:-}" || "$SHELL" == *bash ]]; then
 fi
 
 if [[ -n "$RC_FILE" && -f "$RC_FILE" ]]; then
-    if ! grep -q "source $CONFIG_DIR/dbx-smith.sh" "$RC_FILE" 2>/dev/null; then
+    if ! grep -q "source $CONFIG_DIR/src/dbx-smith.sh" "$RC_FILE" 2>/dev/null; then
         read -p "Would you like to automatically append the source line to $RC_FILE? (y/n) " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             {
                 echo ""
                 echo "# DbxSmith Productivity Suite Runtime Core"
-                echo "source $CONFIG_DIR/dbx-smith.sh"
+                echo "source $CONFIG_DIR/src/dbx-smith.sh"
             } >> "$RC_FILE"
             echo "Added to $RC_FILE."
         fi
@@ -68,7 +68,7 @@ if [[ -n "$RC_FILE" && -f "$RC_FILE" ]]; then
     fi
 else
     echo "Could not detect default shell. Please manually append the source line:"
-    echo "source $CONFIG_DIR/dbx-smith.sh"
+    echo "source $CONFIG_DIR/src/dbx-smith.sh"
 fi
 
 echo "Setup finished. Please restart your shell or run 'source $RC_FILE'."

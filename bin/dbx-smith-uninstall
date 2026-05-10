@@ -33,11 +33,11 @@ elif [[ -n "${BASH_VERSION:-}" || "$SHELL" == *bash ]]; then
 fi
 
 if [[ -n "$RC_FILE" && -f "$RC_FILE" ]]; then
-    if grep -q "source $CONFIG_DIR/dbx-smith.sh" "$RC_FILE" 2>/dev/null; then
+    if grep -q "dbx-smith.sh" "$RC_FILE" 2>/dev/null; then
         echo "Removing shell injection from $RC_FILE..."
         TEMP_FILE=$(mktemp)
-        # Remove both the comment line and the source line
-        grep -v "# DbxSmith Productivity Suite Runtime Core" "$RC_FILE" | grep -v "source $CONFIG_DIR/dbx-smith.sh" > "$TEMP_FILE" || true
+        # Remove both the comment line and the source line (flexible match)
+        grep -v "# DbxSmith Productivity Suite Runtime Core" "$RC_FILE" | grep -v "source .*/dbx-smith.sh" > "$TEMP_FILE" || true
         cat "$TEMP_FILE" > "$RC_FILE"
         rm -f "$TEMP_FILE"
         echo "Successfully cleaned $RC_FILE."

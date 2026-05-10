@@ -1,9 +1,22 @@
 #!/usr/bin/env bash
 # dbx-smith-rm - The Atomic Destructor / DbxSmith
-#
-# DESCRIPTION:
-#   Cleanly destroys a Distrobox container along with any associated DbxSmith
-#   infrastructure including isolated home directories, podman networks, and aliases.
+# Refactored for consistency with modular architecture.
+
+set -euo pipefail
+
+# --- [ Dependency Injection & Module Loading ] ---
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
+SRC_DIR="$CONFIG_DIR/src"
+
+# Developer override: if running from a local clone, prioritize the local src/
+REPO_SRC="$(dirname "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")")/src"
+if [[ -d "$REPO_SRC" ]]; then
+    SRC_DIR="$REPO_SRC"
+fi
+readonly SRC_DIR
+
+# shellcheck source=src/core/constants.sh
+source "${SRC_DIR}/core/constants.sh"
 
 usage() {
     echo "Usage: dbx-smith-rm [options] <box_name> [box_name_2 ...]"
@@ -19,7 +32,6 @@ usage() {
 }
 
 main() {
-    set -euo pipefail
     trap 'echo "Teardown interrupted."; exit 1' INT TERM
     trap 'echo "Error encountered during teardown."; exit 1' ERR
 
@@ -52,11 +64,6 @@ main() {
         usage >&2
         exit 1
     fi
-
-    local HOME_BASE="${HOME}/boxes"
-    local CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
-    local ALIAS_DIR="${CONFIG_DIR}/aliases.d"
-    local REG_DIR="${CONFIG_DIR}/registry"
 
     for target in "${targets[@]}"; do
         echo "========================================"

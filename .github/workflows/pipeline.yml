@@ -77,6 +77,22 @@ jobs:
       - name: Install Semantic Release
         run: npm install -g semantic-release @semantic-release/github @semantic-release/commit-analyzer @semantic-release/release-notes-generator
       
+      - name: Create Production Bundle
+        run: |
+          VERSION=$(node -e "console.log(require('./package.json').version)")
+          BUNDLE_NAME="dbx-smith-v${VERSION}.tar.gz"
+          # Create a clean bundle excluding dev-only files (docs, tests, git configs)
+          tar -czf "$BUNDLE_NAME" \
+            bin/ \
+            src/ \
+            man/ \
+            internal/ \
+            Makefile \
+            install.sh \
+            LICENSE \
+            README.md
+          echo "BUNDLE_NAME=$BUNDLE_NAME" >> $GITHUB_ENV
+
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

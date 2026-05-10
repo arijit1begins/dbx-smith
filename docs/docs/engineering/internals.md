@@ -106,7 +106,7 @@ sequenceDiagram
     R->>D: 5. Validate box exists (distrobox list)
     R->>C: 6. Read registry STRATEGY field
     C-->>R: 7. Return strategy (e.g. ghost)
-    R->>D: 8. distrobox enter [--user ghostuser] [box]
+    R->>D: 8. distrobox enter [--user ghostuser --workdir /home/ghostuser] [box]
     D->>B: 9. Attach to container, execute /etc/profile.d/dbx-smith-env.sh
     B-->>S: 10. Interactive shell session
 
@@ -148,6 +148,8 @@ graph TD
 
 ## VI. Advanced Engineering Details
 
+For a deep dive into how DbxSmith handles shell hooks, cross-distro environment persistence, and the Ghost identity engine, see the [Shell Configuration Engineering](./shell_configuration.md) guide.
+
 ### 1. Zero-Escape Payload Injection (Base64 Tunnelling)
 
 Passing complex scripts into `distrobox create --init-hooks` causes double shell evaluation — the host shell consumes `>>`, `$`, and `"` before they reach the container.
@@ -160,21 +162,22 @@ hook="echo '$payload' | base64 -d | sh"
 distrobox create --init-hooks "$hook" ...
 ```
 
-### 2. The Two-Phase Airgap
+### 2. The Native Interface Airgap
 
-Distrobox's first-run initializer needs internet access to install `sudo` and `mount` inside the guest. A container created with `--network none` immediately fails this step.
+Distrobox's first-run initializer needs internet access to install `sudo` and `mount` inside the guest. A container created with `--network none` immediately fails this step. Furthermore, rootless Podman defaults to user-mode daemons (`slirp4netns` or `pasta`) which *cannot* be dynamically disconnected from the outside using `podman network disconnect`.
 
-**Solution:** Provision with a throwaway network, bootstrap, then destroy it permanently.
+**Solution:** Bootstrap using the default internet-connected network, then dynamically severe all internal network interfaces after the first-run installation completes.
 
 ```bash
-podman network create dbx-tmp-<name>
-distrobox create --additional-flags "--network dbx-tmp-<name>" ...
-distrobox enter <name> -- true          # triggers first-run
-podman network disconnect dbx-tmp-<name> <name>
-podman network rm dbx-tmp-<name>        # bridge permanently deleted
+# Inside the container's init-hook AFTER packages are installed
+for iface in $(ls /sys/class/net/ 2>/dev/null); do
+    if [ "$iface" != "lo" ]; then
+        ip link set "$iface" down 2>/dev/null || true;
+    fi;
+done
 ```
 
-Isolation is **event-driven** (process completion), not time-based.
+This ensures isolation is instantaneously effective, completely avoids relying on host firewall tools (`iptables`/`nftables`), and works seamlessly across all container environments regardless of the underlying bridge or daemon.
 
 ### 3. Exact-Match Container Validation
 

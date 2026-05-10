@@ -6,7 +6,7 @@
 
 # DESCRIPTION
 
-dbx-smith-spin is the CLI factory and provisioner for the DbxSmith productivity suite. It automates the creation of Distrobox containers using predefined security and isolation strategies. It configures the containers, applies custom UI coloring based on the image, and automatically generates shell aliases and keybindings for quick access.
+dbx-smith-spin is the CLI factory and provisioner for the DbxSmith productivity suite. It automates the creation of Distrobox containers using predefined security and isolation strategies. It utilizes a modular "Factory Pattern" architecture, allowing for zero-regression scalability and easy extensibility. It configures the containers, applies custom UI coloring based on the image, and automatically generates shell aliases and keybindings for quick access.
 
 # SYNOPSIS
 

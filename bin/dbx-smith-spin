@@ -1,16 +1,30 @@
 #!/usr/bin/env bash
-# dbx-smith-spin - The CLI Factory/Provisioner / DbxSmith
-#
-# DESCRIPTION:
-#   Automates the provisioning of Distrobox containers under various isolation strategies
-#   (standard, airgapped, ghost, isolated-net). Generates custom profiles, networking,
-#   and dynamic shell integrations.
+# dbx-smith-spin - The CLI Factory / Provisioner
+# Refactored for modularity, factory patterns, and dependency injection.
 
-readonly VERSION="1.3.0"
-readonly HOME_BASE="${HOME}/boxes"
-readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
-readonly ALIAS_DIR="${CONFIG_DIR}/aliases.d"
-readonly REG_DIR="${CONFIG_DIR}/registry"
+set -euo pipefail
+
+# --- [ Dependency Injection & Module Loading ] ---
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
+SRC_DIR="$CONFIG_DIR/src"
+
+# Developer override: if running from a local clone, prioritize the local src/
+REPO_SRC="$(dirname "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")")/src"
+if [[ -d "$REPO_SRC" ]]; then
+    SRC_DIR="$REPO_SRC"
+fi
+readonly SRC_DIR
+
+# shellcheck source=src/core/constants.sh
+source "${SRC_DIR}/core/constants.sh"
+# shellcheck source=src/core/utils.sh
+source "${SRC_DIR}/core/utils.sh"
+# shellcheck source=src/core/payload.sh
+source "${SRC_DIR}/core/payload.sh"
+# shellcheck source=src/core/distro_factory.sh
+source "${SRC_DIR}/core/distro_factory.sh"
+# shellcheck source=src/strategies/factory.sh
+source "${SRC_DIR}/strategies/factory.sh"
 
 usage() {
     cat <<EOF
@@ -26,83 +40,7 @@ Strategies:
 EOF
 }
 
-_bootstrap() {
-    mkdir -p "$HOME_BASE" "$ALIAS_DIR" "$REG_DIR"
-    
-    # Prerequisite Check: Distrobox
-    if ! command -v distrobox >/dev/null 2>&1; then
-        echo "Error: 'distrobox' is not installed. DbxSmith requires distrobox to operate." >&2
-        echo "You can install it using: curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sh" >&2
-        read -r -p "Would you like to attempt automatic installation? (y/N): " choice
-        if [[ "$choice" =~ ^[Yy]$ ]]; then
-            curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sh || { echo "Auto-install failed. Please install distrobox manually."; exit 1; }
-        else
-            exit 127
-        fi
-    fi
-
-    for cmd in podman cksum awk grep printf id sed; do
-        if ! command -v "$cmd" >/dev/null 2>&1; then
-            echo "Error: Required command '$cmd' not found." >&2
-            exit 127
-        fi
-    done
-}
-
-_get_color() {
-    local img="$1"
-    # Deterministic 100% hash-derived color via cksum
-    local hash
-    hash=$(echo "$img" | cksum | awk '{print $1}')
-    printf "#%02x%02x%02x" $(( (hash % 40) + 15 )) $(( ((hash / 100) % 40) + 15 )) $(( ((hash / 10000) % 40) + 15 ))
-}
-
-_register_shortcuts() {
-    local name="$1"
-    local usr_alias="$2"
-    local usr_bind="$3"
-    local fragment="$ALIAS_DIR/${name}.sh"
-
-    true > "$fragment"
-    
-    if [[ -n "$usr_alias" ]]; then
-        echo "alias ${usr_alias}=\"dbx-smith ${name}\"" >> "$fragment"
-    fi
-
-    if [[ -n "$usr_bind" ]]; then
-        cat << EOF >> "$fragment"
-# Dynamic Hotkey Binding
-if [[ -n "\${ZSH_VERSION:-}" ]]; then
-    _dbx_jump_${name}() { BUFFER="dbx-smith ${name}"; zle accept-line; }
-    zle -N _dbx_jump_${name}
-    bindkey '${usr_bind}' _dbx_jump_${name}
-elif [[ -n "\${BASH_VERSION:-}" ]]; then
-    bind -x '"${usr_bind}":"dbx-smith ${name}"'
-fi
-EOF
-    fi
-
-    if [[ ! -s "$fragment" ]]; then
-        rm -f "$fragment"
-    fi
-}
-
-_write_manifest() {
-    local name="$1"
-    local strategy="$2"
-    local image="$3"
-    local manifest="$REG_DIR/${name}.conf"
-    
-    cat <<EOF > "$manifest"
-NAME=$name
-STRATEGY=$strategy
-IMAGE=$image
-CREATED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-EOF
-}
-
 main() {
-    set -euo pipefail
     trap 'echo -e "\nCreation interrupted."; exit 130' INT TERM
 
     case "${1:-}" in
@@ -110,148 +48,62 @@ main() {
         -v|--version) echo "dbx-smith-spin v$VERSION"; exit 0 ;;
     esac
 
-    _bootstrap
+    bootstrap
 
-    local strategy name image usr_alias usr_bind
-
+    local strategy_name name image usr_alias usr_bind
     if [[ $# -eq 0 ]]; then
-        while [[ -z "${strategy:-}" ]]; do
-            read -r -p "Strategy (standard/airgapped/ghost/isolated-net/ghost-airgapped/ghost-isolated-net): " strategy || exit 130
-        done
-        while [[ -z "${name:-}" ]]; do
-            read -r -p "Box Name: " name || exit 130
-        done
-        while [[ -z "${image:-}" ]]; do
-            read -r -p "Image: " image || exit 130
-        done
+        while [[ -z "${strategy_name:-}" ]]; do read -r -p "Strategy: " strategy_name || exit 130; done
+        while [[ -z "${name:-}" ]]; do read -r -p "Box Name: " name || exit 130; done
+        while [[ -z "${image:-}" ]]; do read -r -p "Image: " image || exit 130; done
         read -r -p "Alias (optional): " usr_alias || exit 130
         read -r -p "Bindkey (optional, e.g. ^G): " usr_bind || exit 130
     else
-        strategy="$1"
+        strategy_name="$1"
         name="${2:-}"
         image="${3:-}"
         usr_alias="${4:-}"
         usr_bind="${5:-}"
     fi
 
-    if [[ -z "$name" || -z "$image" || -z "$strategy" ]]; then
+    if [[ -z "$name" || -z "$image" || -z "$strategy_name" ]]; then
         echo "Error: Missing required arguments." >&2
-        usage >&2
-        exit 1
+        usage >&2; exit 1
     fi
 
-    # Exact-match duplicate guard using default whitespace tokenization
     if distrobox list --no-color | awk -v n="$name" 'NR>1 && $3==n {found=1} END {exit !found}'; then
-        echo "Error: Distrobox '$name' already exists." >&2
-        exit 1
+        echo "Error: Distrobox '$name' already exists." >&2; exit 1
     fi
 
-    local color
-    color=$(_get_color "$image")
+    # 1. Distro Configuration Injection
+    distro_factory "$image"
+
+    # 2. Strategy Loading
+    strategy_factory "$strategy_name"
+
+    # 3. Payload Generation
+    local color payload
+    color=$(get_color "$image")
+    payload=$(generate_init_payload "$name" "$color")
+
+    # 4. Provisioning Execution
+    echo "Creating distrobox '$name' ($image) using strategy '$strategy_name'..."
     
-    local script_payload
-    script_payload=$(cat <<EOF
-mkdir -p /etc/profile.d
-cat << INNER_EOF > /etc/profile.d/dbx-smith-env.sh
-# Standardise prompt terminator to $ or # while enforcing ANSI C escape for Zsh/Bash integrity
-if [ -n "\\\${ZSH_VERSION:-}" ]; then
-    export PROMPT=\\\$'\\\\%{\\\\e]11;${color}\\\\a\\\\%}\\\\F{cyan}($name)\\\\f \\\\F{green}%n@%m\\\\f:\\\\F{blue}%~\\\\f%(!.#.$) '
-else
-    export PS1="\\\[\\\033]11;${color}\\\a\\\]\\\[\\\033[36m\\\]($name)\\\[\\\033[0m\\\] \\\[\\\033[32m\\\]\\\u@\\\h\\\[\\\033[0m\\\]:\\\[\\\033[34m\\\]\\\w\\\[\\\033[0m\\\]\\\\\\\$ "
-fi
-INNER_EOF
-
-# Support multiple Zsh configuration paths (Fedora/RedHat vs Debian/Ubuntu)
-for zfile in /etc/zshrc /etc/zsh/zshrc; do
-    zdir=\$(dirname "\$zfile")
-    if [ -d "\$zdir" ]; then
-        touch "\$zfile"
-        grep -q "dbx-smith-env.sh" "\$zfile" || echo "source /etc/profile.d/dbx-smith-env.sh" >> "\$zfile"
-    fi
-done
-
-# Bootstrap empty dotfiles to prevent Zsh newuser-wizard from freezing entry
-for user_home in /home/*; do
-    if [ -d "\$user_home" ]; then
-        touch "\$user_home/.zshrc" "\$user_home/.bashrc"
-        chown -R \$(basename "\$user_home"):\$(basename "\$user_home") "\$user_home" 2>/dev/null || true
-    fi
-done
-EOF
-)
-    local payload
-    payload=$(printf "%s" "$script_payload" | base64 | tr -d '\n')
-    local init_hook="echo '$payload' | base64 -d | sh"
+    # Global array to hold flags (pattern for Bash "objects")
+    DBX_FLAGS=()
     
-    local dbx_flags=(--name "$name" --image "$image")
-
-    case "$strategy" in
-        standard)
-            dbx_flags+=(--init-hooks "$init_hook")
-            ;;
-        airgapped)
-            podman network inspect "dbx-tmp-${name}" >/dev/null 2>&1 || podman network create "dbx-tmp-${name}" >/dev/null
-            local isolate_hook="mkdir -p /tmp/save_home && mount --bind \"$HOME_BASE/$name\" /tmp/save_home && mount -t tmpfs tmpfs /home && mkdir -p \"$HOME_BASE/$name\" && mount --bind /tmp/save_home \"$HOME_BASE/$name\" && umount /tmp/save_home"
-            dbx_flags+=(--home "$HOME_BASE/$name" --unshare-all --additional-flags "--network dbx-tmp-${name}" --init-hooks "$isolate_hook; $init_hook")
-            ;;
-        ghost)
-            local ghost_hook
-            ghost_hook="id ghostuser &>/dev/null || (useradd -m ghostuser && usermod -aG wheel ghostuser 2>/dev/null || true && usermod -aG sudo ghostuser 2>/dev/null || true); $init_hook"
-            dbx_flags+=(--hostname "ghost-shell" --init-hooks "$ghost_hook")
-            ;;
-        isolated-net)
-            # Create podman network if missing
-            podman network inspect "dbx-net-${name}" >/dev/null 2>&1 || podman network create "dbx-net-${name}" >/dev/null
-            local isolate_hook="mkdir -p /tmp/save_home && mount --bind \"$HOME_BASE/$name\" /tmp/save_home && mount -t tmpfs tmpfs /home && mkdir -p \"$HOME_BASE/$name\" && mount --bind /tmp/save_home \"$HOME_BASE/$name\" && umount /tmp/save_home"
-            dbx_flags+=(--home "$HOME_BASE/$name" --unshare-all --additional-flags "--network dbx-net-${name}" --init-hooks "$isolate_hook; $init_hook")
-            ;;
-        ghost-airgapped)
-            podman network inspect "dbx-tmp-${name}" >/dev/null 2>&1 || podman network create "dbx-tmp-${name}" >/dev/null
-            local isolate_hook="mount -t tmpfs tmpfs /home && mkdir -p /home/$USER"
-            local ghost_hook="id ghostuser &>/dev/null || (useradd -m ghostuser && usermod -aG wheel ghostuser 2>/dev/null || true && usermod -aG sudo ghostuser 2>/dev/null || true); $init_hook"
-            dbx_flags+=(--hostname "ghost-shell" --unshare-all --additional-flags "--network dbx-tmp-${name}" --init-hooks "$isolate_hook; $ghost_hook")
-            ;;
-        ghost-isolated-net)
-            podman network inspect "dbx-net-${name}" >/dev/null 2>&1 || podman network create "dbx-net-${name}" >/dev/null
-            local isolate_hook="mount -t tmpfs tmpfs /home && mkdir -p /home/$USER"
-            local ghost_hook="id ghostuser &>/dev/null || (useradd -m ghostuser && usermod -aG wheel ghostuser 2>/dev/null || true && usermod -aG sudo ghostuser 2>/dev/null || true); $init_hook"
-            dbx_flags+=(--hostname "ghost-shell" --unshare-all --additional-flags "--network dbx-net-${name}" --init-hooks "$isolate_hook; $ghost_hook")
-            ;;
-        *)
-            echo "Error: Unknown strategy '$strategy'." >&2
-            exit 1
-            ;;
-    esac
-
-    echo "Creating distrobox '$name' ($image) using strategy '$strategy'..."
-    distrobox create --yes "${dbx_flags[@]}" | sed "s/distrobox enter/dbx-smith/g"
+    # Call the strategy-specific flag generator
+    local func_name="strategy_${strategy_name//-/_}_get_flags"
+    "$func_name" "$name" "$image" "$payload"
     
-    if [[ "$strategy" == "airgapped" ]]; then
-        echo "Airgapped strategy detected. Bootstrapping container with temporary internet access..."
-        # Force distrobox to perform its first-run package installation
-        distrobox enter "$name" -- true
-        
-        echo "Severing all network bridges to fully airgap the container..."
-        # Disconnect and destroy the throwaway network
-        podman network disconnect "dbx-tmp-${name}" "$name" >/dev/null 2>&1 || true
-        podman network rm "dbx-tmp-${name}" >/dev/null 2>&1 || true
-        echo "Container '$name' is now strictly offline."
-    fi
+    # Execute distrobox create
+    distrobox create --yes "${DBX_FLAGS[@]}" | sed "s/distrobox enter/dbx-smith/g"
 
-    _write_manifest "$name" "$strategy" "$image"
-    _register_shortcuts "$name" "${usr_alias:-}" "${usr_bind:-}"
-    
+    # 5. Finalization
+    local fin_name="strategy_${strategy_name//-/_}_finalize"
+    "$fin_name" "$name" "$strategy_name" "$image" "$usr_alias" "$usr_bind"
+
     echo -e "\n\033[1;32m✔ Successfully provisioned '$name'.\033[0m"
-    echo -e "To enter your new sandbox, run:"
-    echo -e "\n    \033[1;36mdbx-smith $name\033[0m\n"
-
-    if [[ -n "${usr_alias:-}" ]]; then
-        echo -e "Or use your custom alias: \033[1;36m$usr_alias\033[0m"
-    fi
-    if [[ -n "${usr_bind:-}" ]]; then
-        echo -e "Or use your hotkey: \033[1;36m${usr_bind}\033[0m"
-    fi
-    echo ""
+    echo -e "To enter your new sandbox, run:\n\n    \033[1;36mdbx-smith $name\033[0m\n"
 }
 
 main "$@"

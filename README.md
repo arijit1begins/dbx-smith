@@ -13,6 +13,7 @@ A professional-grade provisioning and management suite for **<a href="https://di
 - **Strategic Isolation**: Provision boxes as `standard`, `airgapped`, `isolated-net`, `ghost`, or hybrid (`ghost-airgapped`, `ghost-isolated-net`).
 - **True Tmpfs Home Isolation**: Prevent host dotfile leaks in secure boxes by over-mounting the host's `/home` with an ephemeral RAM disk.
 - **Visual Identity**: Deterministic background colors and dynamic PS1/PROMPT injection based on container image.
+- **Extensible Architecture**: Modular Factory-pattern design for strategies and DI-based distribution configurations.
 - **Zero-Drift Teardowns**: Atomic removal of containers, home directories, and NAT bridges.
 
 

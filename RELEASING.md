@@ -25,8 +25,8 @@ The script will perform the following:
 - Analyze commits since the last tag.
 - Bump the version in `package.json`.
 - Update `CHANGELOG.md`.
-- Synchronize the version string in `bin/dbx-smith-spin`.
-- Create a local commit: `chore(release): X.Y.Z [skip ci]`.
+- Synchronize the version string in `src/core/constants.sh`.
+- Create a local commit: `chore(release): X.Y.Z [skip branch ci]`.
 - Create a local Git tag: `vX.Y.Z`.
 
 ### 3. Push to Remote
@@ -35,10 +35,15 @@ When prompted, confirm the push. This will execute:
 git push origin main --tags
 ```
 
+### 4. The "Surgical Skip" Logic
+The release commit uses the `[skip branch ci]` flag. 
+- **What it does**: It prevents the `Continuous Integration` job from running on the `main` branch push.
+- **Why?**: Since you are pushing both a commit and a tag, standard CI would run twice on the same code. By using `[skip branch ci]`, we skip the redundant branch test but **still allow the Tag trigger** to run the full release pipeline.
+
 ## Post-Push Automation
 Once the tag is pushed, the **Unified Pipeline** (`pipeline.yml`) takes over:
 
-1. **GitHub Release**: Uses `@semantic-release/github` to create a new entry in the repository's "Releases" section, generates notes from the commits, and uploads binaries/scripts as assets.
+1. **GitHub Release**: Uses `@semantic-release/github` to create a new entry in the repository's "Releases" section, generates notes from the commits, and uploads a **Production Bundle** (`.tar.gz`) as an asset.
 2. **Documentation**: Builds the Docusaurus site and deploys it to GitHub Pages, ensuring the live docs match the latest release.
 
 ## Branch Protection Rules

@@ -99,8 +99,7 @@ sequenceDiagram
     note over U,R: Phase 4 — Airgap Sever (airgapped strategy only)
     alt Strategy is Airgapped
         S->>D: 9a. distrobox enter [name] -- true (trigger first-run package install)
-        S->>D: 9b. podman network disconnect dbx-tmp-[name]
-        S->>D: 9c. podman network rm dbx-tmp-[name] (container permanently offline)
+        S->>D: 9b. Container executes `ip link set down` loop internally
     end
 
     note over U,R: Phase 5 — State Registration
@@ -118,12 +117,12 @@ This is the core provisioning logic.
 - **Image Checksumming**: Uses `cksum` on the image name to generate a deterministic seed.
 - **Theme Generation**: Converts the checksum seed into an RGB hex color. This ensures that every time you pull `ubuntu:latest`, your boxes have a consistent, distinct background color.
 - **Isolation Logic**:
-  - For **Airgapped**, it uses a **two-phase** approach. During `distrobox create`, it attaches a throwaway Podman network (`dbx-tmp-<name>`) so Distrobox's first-run package installer can reach the internet. Once `distrobox enter <name> -- true` completes, DbxSmith runs `podman network disconnect` and `podman network rm` to permanently destroy the bridge. The container is then left with zero network interfaces — isolation is achieved via namespace detachment, not a flag.
+  - For **Airgapped**, it uses a **two-phase** approach. During `distrobox create`, it uses the default internet-connected network so Distrobox's first-run package installer can succeed. Once the setup completes, DbxSmith dynamically enumerates and permanently severs all internal non-loopback interfaces using `ip link set down`. Isolation is achieved instantaneously from within the container, avoiding complex podman bridge teardowns.
 
 ### 2. `src/dbx-smith.sh` (The Pulse)
 The runtime core that lives in your shell.
 - **Dynamic Sourcing**: It doesn't just store aliases; it sources them from `~/.config/dbx-smith/aliases.d/`. This allows you to "hot-swap" environment access without restarting your shell.
-- **The Wrapper**: `dbx-smith()` function intercepts the container name and checks the registry before calling `distrobox enter`. For `ghost` boxes, it automatically appends `--user ghostuser`.
+- **The Wrapper**: `dbx-smith()` function intercepts the container name and checks the registry before calling `distrobox enter`. For `ghost` boxes, it automatically appends `--user ghostuser --workdir /home/ghostuser`.
 
 ### 3. `bin/dbx-smith-rm` (The Reaper)
 Ensures zero-drift teardowns.
@@ -148,7 +147,7 @@ Ensures zero-drift teardowns.
 ### Ghost Strategy
 *   **Visual**: A custom PS1 with a cyan `(<name>)` marker and a deterministic background color.
 *   **Identity**: Running `whoami` returns `ghostuser`. Running `hostname` returns `ghost-shell`. Both the username and hostname differ from the host, but the network and home directory are still host-linked.
-*   **Mechanism**: An init-hook runs `useradd -m ghostuser` inside the container (permanent within the container's `/etc/passwd`). The runtime (`dbx-smith.sh`) reads the registry and passes `--user ghostuser` to `distrobox enter` automatically.
+*   **Mechanism**: A post-bootstrap `podman exec` routine runs `useradd -m ghostuser` inside the container (permanent within the container's `/etc/passwd`) avoiding initialization race conditions. The runtime (`dbx-smith.sh`) reads the registry and passes `--user ghostuser --workdir /home/ghostuser` to `distrobox enter` automatically.
 *   **Home Dir**: Bind-mounted from the host `$HOME` — the ghost user operates in the same home directory as the host user.
 *   **Use Case**: Testing permission-sensitive scripts or developing with a clean-slate identity without creating a real Linux user on the host.
 
@@ -186,7 +185,7 @@ CREATED_AT=2026-04-21T00:15:00Z
 | Field | Written by | Read by | Purpose |
 | :--- | :--- | :--- | :--- |
 | `NAME` | `spin` | `rm` | Exact match key used by `rm` to target the right container and its associated home dir, alias fragment, and network bridge. |
-| `STRATEGY` | `spin` | `runtime` | Tells `dbx-smith` *how* to enter the box. `ghost` → appends `--user ghostuser`. Other strategies → standard entry. |
+| `STRATEGY` | `spin` | `runtime` | Tells `dbx-smith` *how* to enter the box. `ghost` → appends `--user ghostuser --workdir /home/ghostuser`. Other strategies → standard entry. |
 | `IMAGE` | `spin` | — | Audit trail. Lets you inspect what image a running box was built from without querying Podman. |
 | `CREATED_AT` | `spin` | — | Timestamp for auditing and sorting when you have many boxes. |
 

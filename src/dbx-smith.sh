@@ -6,6 +6,17 @@
 #   entrypoint function, lazy-loaded autocomplete, and dynamic sourcing of
 #   container aliases and keybindings.
 
+# --- [ Dependency Injection & Module Loading ] ---
+_SRC_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || readlink -f "$0" 2>/dev/null || echo "$0")")"
+# shellcheck source=src/core/constants.sh
+if [[ -f "$_SRC_DIR/core/constants.sh" ]]; then
+    source "$_SRC_DIR/core/constants.sh"
+else
+    # Fallback if not using modular structure
+    REG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith/registry"
+    ALIAS_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith/aliases.d"
+fi
+
 dbx-smith() {
     local box="$1"
     [[ -z "$box" ]] && { echo "usage: dbx-smith <box_name> [args...]"; return 1; }
@@ -18,24 +29,37 @@ dbx-smith() {
         return 1
     fi
 
-    # Read manifest if exists to determine if it is a ghost strategy
-    local REG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith/registry"
+    # Read manifest if exists to determine strategy-specific enter flags
     local enter_args=()
     if [[ -f "$REG_DIR/${box}.conf" ]]; then
-        if grep -q "STRATEGY=ghost" "$REG_DIR/${box}.conf"; then
-            enter_args+=(--user ghostuser)
+        local strategy
+        strategy=$(grep "^STRATEGY=" "$REG_DIR/${box}.conf" | cut -d= -f2)
+        if [[ "$strategy" == ghost* ]]; then
+            enter_args+=(--no-workdir --additional-flags "--user ghostuser --workdir /home/ghostuser --env HOME=/home/ghostuser")
+        elif [[ "$strategy" == "airgapped" || "$strategy" == "isolated-net" ]]; then
+            # Prevent host path leakage by forcing entry into the container's isolated home
+            enter_args+=(--no-workdir)
         fi
     else
-        # Fallback heuristic
+        # Fallback heuristic for legacy or missing registry entries
         if podman exec "$box" grep -q "ghostuser" /etc/passwd 2>/dev/null; then
-            enter_args+=(--user ghostuser)
+            enter_args+=(--no-workdir --additional-flags "--user ghostuser --workdir /home/ghostuser")
         fi
     fi
 
+    # Trap to ensure background reset even on SIGINT/interrupt
+    trap 'if [[ -t 1 ]]; then printf "\033]111\007\033]11;#000000\007"; fi' EXIT INT TERM
+
     distrobox enter "${enter_args[@]}" "$box" "${@:2}"
+    local exit_code=$?
     
-    # Deterministic explicitly colored UI reset (black fallback)
-    printf '\033]11;#000000\007'
+    # Explicit reset after clean exit
+    if [[ -t 1 ]]; then
+        printf '\033]111\007\033]11;#000000\007'
+    fi
+    
+    trap - EXIT INT TERM
+    return $exit_code
 }
 
 _dbx_comp_lazy() {
@@ -76,17 +100,14 @@ alias dbl="distrobox list"
 alias db-stop-all="distrobox stop --all"
 
 # Loose Coupling - Safe Read Guard for aliases
-_DBX_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
-_DBX_ALIAS_DIR="$_DBX_CONFIG_HOME/aliases.d"
-
-if [[ -d "$_DBX_ALIAS_DIR" ]]; then
+if [[ -d "$ALIAS_DIR" ]]; then
     if [[ -n "${ZSH_VERSION:-}" ]]; then
         # We use eval here so bash's parser doesn't choke on zsh's (N) nullglob syntax
-        eval 'for fragment in "$_DBX_ALIAS_DIR"/*.sh(N); do
+        eval 'for fragment in "$ALIAS_DIR"/*.sh(N); do
             [[ -r "$fragment" && -s "$fragment" ]] && source "$fragment"
         done'
     elif [[ -n "${BASH_VERSION:-}" ]]; then
-        for fragment in "$_DBX_ALIAS_DIR"/*.sh; do
+        for fragment in "$ALIAS_DIR"/*.sh; do
             # shellcheck source=/dev/null
             [[ -r "$fragment" && -s "$fragment" ]] && source "$fragment"
         done

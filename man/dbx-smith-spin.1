@@ -49,7 +49,7 @@ Container image to use (e.g., docker.io/library/alpine).
 (Optional) Zsh/Bash hotkey to bind (e.g., '^G').
 .SH DESCRIPTION
 .B dbx-smith-spin
-is the CLI factory and provisioner for the DbxSmith productivity suite. It automates the creation of Distrobox containers using predefined security and isolation strategies. It configures the containers, applies custom UI coloring based on the image, and automatically generates shell aliases and keybindings for quick access.
+is the CLI factory and provisioner for the DbxSmith productivity suite. It automates the creation of Distrobox containers using predefined security and isolation strategies. It utilizes a modular "Factory Pattern" architecture, allowing for zero-regression scalability and easy extensibility. It configures the containers, applies custom UI coloring based on the image, and automatically generates shell aliases and keybindings for quick access.
 .SH EXAMPLES
 Provision a standard container with alpine linux:
 .br

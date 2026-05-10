@@ -11,7 +11,7 @@ DbxSmith uses **Strategies** as provisioning blueprints. A strategy is a named c
 | Strategy | Network | Home Dir | User | Hostname | Post-Init |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `standard` | Host-Bridge | Host `$HOME` | Host-User | Host hostname | PS1 & Theme Injection |
-| `airgapped` | **None** (post-sever) | `~/boxes/<name>` (True tmpfs isolation) | Host-User | Host hostname | Temp-bridge → first-run bootstrap → bridge destruction |
+| `airgapped` | **None** (post-sever) | `~/boxes/<name>` (True tmpfs isolation) | Host-User | Host hostname | First-run bootstrap → `ip link set down` interface isolation |
 | `ghost` | Host-Bridge | `~/ghostuser` (ephemeral) | `ghostuser` | `ghost-shell` | `ghostuser` creation + PS1 & Theme Injection |
 | `isolated-net` | Dedicated NAT-Bridge | `~/boxes/<name>` (True tmpfs isolation) | Host-User | Host hostname | NAT bridge creation + PS1 & Theme Injection |
 | `ghost-airgapped` | **None** (post-sever) | `~/ghostuser` (ephemeral) | `ghostuser` | `ghost-shell` | `ghostuser` creation + zero network |
@@ -34,7 +34,9 @@ Before running any strategy, DbxSmith requires:
 - **Network**: Host-bridge — full internet access, host services visible inside the container.
 - **Home Dir**: Shared with host — `$HOME` is identical inside and outside.
 - **User / Hostname**: Your actual host username and hostname.
-- **Prompt**: Gains a cyan `(<name>)` marker prefix and a deterministic background color so you always know you're inside a box.
+- **Prompt**: Gains a cyan `(<name>)` marker prefix and a deterministic background color so you always know you're inside a box. 
+  > [!NOTE]
+  > Dynamic background coloring requires a terminal that supports **OSC 11** sequences (e.g., Kitty, XFCE Terminal, or VS Code).
 
 ```bash
 dbx-smith-spin standard devbox docker.io/library/ubuntu:latest dev
@@ -49,7 +51,7 @@ dbx-smith-spin standard devbox docker.io/library/ubuntu:latest dev
 **What changes:**
 - **Network**: Permanently severed after first-run bootstrap. `ping 8.8.8.8` returns "Network is unreachable". No bridge, no DNS, no external routing.
 - **Home Dir**: True tmpfs isolation. The host's `/home` is over-mounted with an empty `tmpfs`, and your custom home directory is cleanly mapped to `~/boxes/<name>`. Host `~/.ssh`, `~/.gnupg`, and `.bash_history` are completely inaccessible from inside.
-- **Two-phase provisioning**: A throwaway Podman network (`dbx-tmp-<name>`) is attached during `distrobox create` so packages can be installed. Once the first-run bootstrap completes, DbxSmith runs `podman network disconnect` then `podman network rm` — the bridge is permanently deleted.
+- **Two-phase provisioning**: Bootstraps using the default Podman network so packages can be installed. After first-run setup completes, DbxSmith dynamically enumerates and permanently severs all non-loopback interfaces inside the container via `ip link set down` — achieving impenetrable zero-network routing regardless of underlying rootless daemon modes (`slirp4netns` or `pasta`).
 
 ```bash
 dbx-smith-spin airgapped vault docker.io/library/alpine
@@ -62,10 +64,14 @@ dbx-smith-spin airgapped vault docker.io/library/alpine
 **Scenario:** You need to test scripts that behave differently based on username or hostname (e.g. permission-sensitive installers, CI scripts) without creating a real Linux user on your host.
 
 **What changes:**
-- **User**: `whoami` returns `ghostuser`. Created permanently inside the container via `useradd -m ghostuser`. The runtime (`dbx-smith`) automatically enters as this user — no manual flags needed.
+- **User**: `whoami` returns `ghostuser`. Created permanently via a post-bootstrap `podman exec` routine to avoid distrobox initialization race conditions. The runtime (`dbx-smith`) automatically enters as this user — no manual flags needed.
 - **Hostname**: `hostname` returns `ghost-shell`.
 - **Network**: Host-bridge — full internet access.
 - **Home Dir**: Ephemeral `~/.ghostuser`.
+- **Privileges**: Passwordless `sudo` is enabled by default via `/etc/sudoers.d/dbx-smith-ghost`.
+
+> [!IMPORTANT]
+> **Host Isolation**: Even if you can see your host home directory in `df -h`, the `ghostuser` (UID 1001) is blocked from entering it at the filesystem level. This ensures your host files stay private even if untrusted scripts are run under the ghost identity.
 
 ```bash
 dbx-smith-spin ghost tester docker.io/library/fedora
@@ -103,3 +109,20 @@ Combines the `ghostuser` identity with a dedicated NAT bridge. Like `ghost-airga
 ```bash
 dbx-smith-spin ghost-isolated-net isolated_tester ubuntu:latest
 ```
+
+---
+
+## Modular Strategy Design
+
+Since v1.3.1, DbxSmith uses a **Modular Factory Pattern** for all strategies. Each strategy is defined as a standalone script in `src/strategies/`. 
+
+This design provides:
+- **Zero Regression**: Changes to the `airgapped` logic are physically isolated from the `standard` strategy.
+- **Extensibility**: Adding a custom isolation strategy is as simple as dropping a new `.sh` file into the strategies directory.
+- **Dependency Injection**: Strategies dynamically receive distribution-specific configurations (like package manager commands) based on the target image.
+
+---
+
+## Technical Implementation
+
+For detailed information on how DbxSmith configures the shell, handles identity obfuscation, and manages environment persistence across different distributions, refer to the [Shell Configuration Engineering](./engineering/shell_configuration.md) deep dive.

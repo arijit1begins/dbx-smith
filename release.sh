@@ -30,13 +30,13 @@ npx standard-version --skip.tag true --skip.commit true
 NEW_VERSION=$(node -e "console.log(require('./package.json').version)")
 echo "🔄 Synchronizing version v$NEW_VERSION across codebase..."
 
-# Update version in main binary
-sed -i "s/readonly VERSION=\".*\"/readonly VERSION=\"$NEW_VERSION\"/" bin/dbx-smith-spin
+# Update version in central constants
+sed -i "s/readonly VERSION=\".*\"/readonly VERSION=\"$NEW_VERSION\"/" src/core/constants.sh
 
 # 4. Finalize Local Commit and Tag
 echo "💾 Committing version bump and creating tag v$NEW_VERSION..."
-git add package.json CHANGELOG.md bin/dbx-smith-spin
-git commit -m "chore(release): $NEW_VERSION [skip ci]"
+git add package.json CHANGELOG.md src/core/constants.sh .releaserc.json .github/workflows/pipeline.yml release.sh
+git commit -m "chore(release): $NEW_VERSION [skip branch ci]"
 git tag -a "v$NEW_VERSION" -m "release v$NEW_VERSION"
 
 echo "✅ Local release v$NEW_VERSION prepared successfully!"

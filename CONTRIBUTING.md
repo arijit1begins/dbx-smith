@@ -20,8 +20,26 @@ By participating in this project, you agree to abide by our Code of Conduct. (TL
 1. Fork the repo and create your branch from `main`.
 2. Install dependencies: `make install`.
 3. If you've added code that should be tested, add or update tests in the `tests/` directory and ensure `./test.sh --full` passes.
-4. Ensure your code passes linting: `shellcheck bin/* src/*.sh`.
+4. Ensure your code passes linting: `shellcheck bin/* src/**/*.sh`.
 5. Submit a Pull Request.
+
+### 4. Modular Architecture & Patterns
+DbxSmith follows a modular, "OOP-inspired" architecture to prevent regressions and ensure scalability:
+
+- **Factory Pattern**: Strategies are isolated in `src/strategies/`. To add a new strategy, create a new file and implement the `get_flags` and `finalize` functions.
+- **Dependency Injection**: Distribution-specific configurations are located in `src/distros/`. These are injected into the core logic based on the image name.
+- **Core Modules**: Common utilities and payload generation are centralized in `src/core/`.
+
+#### Adding a New Strategy:
+1. Create `src/strategies/my-strategy.sh`.
+2. Implement `strategy_my_strategy_get_flags()` and `strategy_my_strategy_finalize()`.
+3. Register the strategy in the `usage()` function of `bin/dbx-smith-spin`.
+
+#### Adding a New Distro Config:
+1. Create `src/distros/my-distro.sh`.
+2. Define `DISTRO_PKGMGR`, `DISTRO_PKG_SU`, etc.
+3. Update `src/core/distro_factory.sh` to recognize your distro's image patterns.
+
 
 ### 4. Contributing to Documentation
 The documentation is built with **Docusaurus** and located in the `/docs` directory.
@@ -65,7 +83,8 @@ Our CI/CD orchestration is consolidated into `.github/workflows/pipeline.yml`, e
 - **CI Job (Continuous Integration)**: 
   - Runs **ShellCheck** on all binaries and core scripts.
   - Executes **`./test.sh --full`**, validating all isolation strategies across a matrix of containers.
-  - Triggered on every Push and Pull Request to `main`.
+  - **Conditional Logic**: Skips the branch push if the commit message contains `[skip branch ci]`. This avoids redundant runs when a Tag is pushed simultaneously.
+  - Triggered on PRs, Tags, and non-release pushes to `main`.
 - **Release Job (GitHub Release)**:
   - Triggered **ONLY** on pushed Git tags (e.g., `v1.2.3`).
   - Uses `semantic-release` (UI only) to generate professional release notes and upload binary assets.
@@ -84,8 +103,8 @@ We follow a **Local-First, Tag-Driven Release Strategy**. GitHub Actions **NEVER
 3. This script will:
    - Calculate the next SemVer version.
    - Update `CHANGELOG.md` and `package.json`.
-   - Update the version string in `bin/dbx-smith-spin`.
-   - Create a local commit and a signed Git tag.
+   - Update the version string in `src/core/constants.sh`.
+   - Create a local commit with `[skip branch ci]` and a signed Git tag.
 4. Push the changes and tags: `git push origin main --tags`.
 
 ### Troubleshooting CI/CD

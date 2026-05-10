@@ -45,7 +45,7 @@ DbxSmith bypasses this by automatically bootstrapping empty `.zshrc` and `.bashr
 
 ### Why does the creation output tell me to run `dbx-smith <name>` instead of `distrobox enter`?
 While Distrobox is the underlying engine, running `distrobox enter` directly bypasses the DbxSmith strategy layer. 
-The `dbx-smith` command reads the stateful registry (`~/.config/dbx-smith/registry/`) to determine *how* to enter the box. For example, if you provisioned a `ghost` box, running `dbx-smith` automatically injects the `--user ghostuser` flag so you enter securely. Bypassing the wrapper means you lose identity obfuscation and automatic terminal color resets.
+The `dbx-smith` command reads the stateful registry (`~/.config/dbx-smith/registry/`) to determine *how* to enter the box. For example, if you provisioned a `ghost` box, running `dbx-smith` automatically injects the `--user ghostuser` and `--workdir /home/ghostuser` flags so you enter securely and bypass potential OCI runtime `chdir` errors when true `tmpfs` isolation is active. Bypassing the wrapper means you lose identity obfuscation, working directory correction, and automatic terminal color resets.
 
 ---
 

@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.1] (2026-05-10)
+
+### Features
+
+* **arch:** implement a modular, "OOP-inspired" architecture utilizing **Factory Patterns** and **Dependency Injection**.
+* **distro:** add native support for **Arch Linux** and **Alpine Linux** distribution profiles.
+* **ghost:** harden ghost strategy with **passwordless sudo** and isolated **HOME** directory mapping.
+* **ui:** improve terminal background reset logic using **OSC 111** and safety traps for interrupted sessions.
+* **core:** decouple isolation strategies and distribution-specific configurations into standalone modules for zero-regression scalability.
+* **install:** optimize `Makefile` and `install.sh` for modular codebase deployment and portable source detection.
+* **man:** update manual pages to reflect the high-performance extensible design.
+* **test:** refactor integration tests to validate **Identity-Based Isolation** (UID mismatch).
+
 ## [1.3.0] (2026-05-01)
 
 ### Features

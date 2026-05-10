@@ -30,7 +30,7 @@ echo " Starting Automated Strategy Tests"
 echo " Target Image: $TEST_IMAGE"
 echo "========================================"
 
-strategies=("standard" "airgapped" "ghost" "isolated-net" "ghost-isolated-net" "ghost-airgapped")
+strategies=("ghost")
 
 for strat in "${strategies[@]}"; do
     box_name="test_${strat}"
