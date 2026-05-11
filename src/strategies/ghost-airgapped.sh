@@ -28,19 +28,29 @@ strategy_ghost_airgapped_finalize() {
     local image name strategy usr_alias usr_bind
     name="$1" strategy="$2" image="$3" usr_alias="$4" usr_bind="$5"
 
-    echo "Ghost-airgapped strategy detected. Bootstrapping container..."
+    echo "Ghost-airgapped strategy detected. Bootstrapping container with temporary internet access..."
+    # 1. Ensure iproute2 is installed for internal consistency
+    local pkg_name="iproute2"
+    [[ "$image" == *fedora* ]] && pkg_name="iproute"
+    
+    distrobox enter --no-workdir "$name" -- bash -c "sudo $DISTRO_PKGMGR update >/dev/null 2>&1 || true; sudo $DISTRO_PKGMGR install -y $pkg_name >/dev/null 2>&1 || true"
     distrobox enter --no-workdir "$name" -- true >/dev/null 2>&1 || true
 
     _create_ghostuser "$name"
 
-    echo "Severing network bridges..."
-    podman exec --user root --workdir / "$name" touch /etc/dbx_airgap_active 2>/dev/null || true
-    podman exec --user root --workdir / "$name" sh -c 'for iface in $(ls /sys/class/net/ 2>/dev/null); do if [ "$iface" != "lo" ]; then ip link set "$iface" down 2>/dev/null || true; fi; done' 2>/dev/null || true
-    podman network disconnect --force podman  "$name" >/dev/null 2>&1 || true
-    podman network disconnect --force podman0 "$name" >/dev/null 2>&1 || true
+    echo "Freezing provisioned identity and applying physical network isolation..."
+    # 2. Stop and Commit the container to save the bootstrap state
+    distrobox stop "$name" --yes >/dev/null 2>&1 || true
+    local freeze_image="dbx-frozen-${name}"
+    podman commit "$name" "$freeze_image" >/dev/null
     
-    podman exec --user root --workdir / "$name" bash -c 'chown root:root /etc/sudo.conf /etc/sudoers /usr/bin/sudo /usr/sbin/sudo 2>/dev/null; chown -R root:root /etc/sudoers.d 2>/dev/null; chmod 0440 /etc/sudoers 2>/dev/null; chmod 4755 /usr/bin/sudo /usr/sbin/sudo 2>/dev/null' 2>/dev/null || true
-
-    write_manifest "$name" "$strategy" "$image"
+    # 3. Remove the networked container and recreate as --network none
+    distrobox rm "$name" --force >/dev/null 2>&1 || true
+    
+    echo "Re-spawning isolated ghost container with '--network none'..."
+    # Re-create with the same flags but adding --network none and using our frozen image
+    distrobox create --name "$name" --image "$freeze_image" --hostname ghost-shell --home "$HOME_BASE/$name" --unshare-all --additional-flags "--network none" --init-hooks "$su_install_hook; $isolate_hook; $airgap_hook; $init_hook" --yes >/dev/null
+    
+    write_manifest "$name" "$strategy" "$freeze_image"
     register_shortcuts "$name" "$usr_alias" "$usr_bind"
 }

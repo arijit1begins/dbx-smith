@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file. See [standa
 * **install:** optimize `Makefile` and `install.sh` for modular codebase deployment and portable source detection.
 * **man:** update manual pages to reflect the high-performance extensible design.
 * **test:** refactor integration tests to validate **Identity-Based Isolation** (UID mismatch).
+* **airgap:** implement **Forge & Freeze** architecture utilizing physical `--network none` isolation and local image commits.
 
 ## [1.3.0] (2026-05-01)
 

@@ -39,29 +39,27 @@ strategy_airgapped_finalize() {
     name="$1" strategy="$2" image="$3" usr_alias="$4" usr_bind="$5"
 
     echo "Airgapped strategy detected. Bootstrapping container with temporary internet access..."
-    # Ensure iproute2 is installed so we can actually sever the link from the inside
+    # 1. Ensure iproute2 is installed for internal consistency
     local pkg_name="iproute2"
     [[ "$image" == *fedora* ]] && pkg_name="iproute"
     
     distrobox enter --no-workdir "$name" -- bash -c "sudo $DISTRO_PKGMGR update >/dev/null 2>&1 || true; sudo $DISTRO_PKGMGR install -y $pkg_name >/dev/null 2>&1 || true"
     distrobox enter --no-workdir "$name" -- true >/dev/null 2>&1 || true
     
-    echo "Severing all network bridges to fully airgap the container..."
-    podman exec --user root --workdir / "$name" touch /etc/dbx_airgap_active 2>/dev/null || true
-    podman exec --user root --workdir / "$name" sh -c 'for iface in $(ls /sys/class/net/ 2>/dev/null); do if [ "$iface" != "lo" ]; then ip link set "$iface" down 2>/dev/null || true; fi; done' 2>/dev/null || true
+    echo "Freezing provisioned state and applying physical network isolation..."
+    # 2. Stop and Commit the container to save the bootstrap state
+    distrobox stop "$name" --yes >/dev/null 2>&1 || true
+    local freeze_image="dbx-frozen-${name}"
+    podman commit "$name" "$freeze_image" >/dev/null
     
-    # Dynamically disconnect all networks
-    local networks
-    networks=$(podman inspect "$name" --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}')
-    for net in $networks; do
-        podman network disconnect --force "$net" "$name" >/dev/null 2>&1 || true
-    done
+    # 3. Remove the networked container and recreate as --network none
+    distrobox rm "$name" --force >/dev/null 2>&1 || true
     
-    # Fix sudo ownership (Fedora)
-    podman exec --user root --workdir / "$name" bash -c \
-        'chown root:root /etc/sudo.conf /etc/sudoers /usr/bin/sudo /usr/sbin/sudo 2>/dev/null; chown -R root:root /etc/sudoers.d 2>/dev/null; chmod 0440 /etc/sudoers 2>/dev/null; chmod 4755 /usr/bin/sudo /usr/sbin/sudo 2>/dev/null' \
-        2>/dev/null || true
-
-    write_manifest "$name" "$strategy" "$image"
+    echo "Re-spawning isolated container with '--network none'..."
+    # Re-create with the same flags but adding --network none and using our frozen image
+    # We strip the original image name and use the frozen one
+    distrobox create --name "$name" --image "$freeze_image" --home "$HOME_BASE/$name" --unshare-all --additional-flags "--network none" --init-hooks "$isolate_hook; $airgap_hook; $init_hook" --yes >/dev/null
+    
+    write_manifest "$name" "$strategy" "$freeze_image"
     register_shortcuts "$name" "$usr_alias" "$usr_bind"
 }

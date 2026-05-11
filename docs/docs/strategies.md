@@ -51,7 +51,7 @@ dbx-smith-spin standard devbox docker.io/library/ubuntu:latest dev
 **What changes:**
 - **Network**: Permanently severed after first-run bootstrap. `ping 8.8.8.8` returns "Network is unreachable". No bridge, no DNS, no external routing.
 - **Home Dir**: True tmpfs isolation. The host's `/home` is over-mounted with an empty `tmpfs`, and your custom home directory is cleanly mapped to `~/boxes/<name>`. Host `~/.ssh`, `~/.gnupg`, and `.bash_history` are completely inaccessible from inside.
-- **Two-phase provisioning**: Bootstraps using the default Podman network so packages can be installed. After first-run setup completes, DbxSmith dynamically enumerates and permanently severs all non-loopback interfaces inside the container via `ip link set down` — achieving impenetrable zero-network routing regardless of underlying rootless daemon modes (`slirp4netns` or `pasta`).
+- **Forge & Freeze isolation**: Bootstraps using the default Podman network so packages can be installed. After first-run setup completes, DbxSmith **commits** the container to a local "frozen" image and re-spawns it with a physical `--network none` flag. This ensures the container physically lacks network hardware, making the isolation impenetrable regardless of underlying rootless daemon modes.
 
 ```bash
 dbx-smith-spin airgapped vault docker.io/library/alpine

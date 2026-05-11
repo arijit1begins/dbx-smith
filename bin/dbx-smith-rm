@@ -83,6 +83,13 @@ main() {
         [[ -d "$HOME_BASE/$target" ]] && rm -rf "${HOME_BASE:?}/${target:?}" && echo "Removed isolated home directory."
         [[ -f "$ALIAS_DIR/${target}.sh" ]] && rm -f "$ALIAS_DIR/${target}.sh" && echo "Removed alias fragment."
         [[ -f "$REG_DIR/${target}.conf" ]] && rm -f "$REG_DIR/${target}.conf" && echo "Removed registry manifest."
+        
+        # Clean up associated frozen images (for airgapped boxes)
+        local freeze_image="dbx-frozen-${target}"
+        if podman image exists "$freeze_image" >/dev/null 2>&1; then
+            echo "Removing frozen image '$freeze_image'..."
+            podman rmi "$freeze_image" >/dev/null 2>&1 || true
+        fi
 
         # Clean up isolated network if it exists
         if podman network inspect "dbx-net-${target}" >/dev/null 2>&1; then
