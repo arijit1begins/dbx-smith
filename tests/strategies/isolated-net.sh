@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# tests/strategies/isolated-net.sh - Validation plugin for 'isolated-net' strategy
+
+set -euo pipefail
+
+box_name="$1"
+target_image="$2"
+
+source "$(dirname "${BASH_SOURCE[0]}")/common_asserts.sh"
+
+echo "=== Testing Strategy: isolated-net ==="
+assert_common_setup "isolated-net" "$box_name" "$target_image"
+assert_isolated_bridge "$box_name"
+assert_common_teardown "$box_name"
+echo "=== Strategy isolated-net OK ==="

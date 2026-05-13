@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/01_unit_ui_payload.sh - Fast unit test for UI payload logic
+# tests/unit/01_unit_ui_payload.sh - Fast unit test for UI payload logic
 
 set -euo pipefail
 

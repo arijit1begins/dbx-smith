@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# tests/02_unit_color_generation.sh - Fast unit test for color generation logic
+# tests/unit/02_unit_color_generation.sh - Fast unit test for color generation logic
 
 set -euo pipefail
 
