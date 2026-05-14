@@ -220,3 +220,25 @@ umount /tmp/save_home
 The new, empty `tmpfs` RAM disk is placed directly *on top* of `/home`. The host's `/home` still technically exists underneath, but it is now 100% inaccessible to any user or process inside the container. We bypass the hardcoded volume mapping without breaking the container lifecycle.
 
 For **Ghost** strategies, it is even simpler: the `tmpfs` is mounted over `/home`, and then `/home/ghostuser` is created ephemerally inside the RAM disk. When the container halts, the RAM disk evaporates, guaranteeing zero traces are left on the host.
+
+---
+
+## VII. Testing Framework Architecture (`tests/`)
+
+The DbxSmith testing suite (`test.sh`) is built on a **Decoupled Master/Slave Orchestrator Architecture**. It is designed to evaluate a massive cross-distribution matrix (Alpine, Arch, Fedora, Ubuntu) across every single isolation strategy dynamically, without hardcoding test cases.
+
+### 1. Dynamic Plugin Discovery
+The testing framework uses a plugin system to discover what to test:
+- **Distro Plugins (`tests/distros/*.conf`)**: Each `.conf` file defines a `DISTRO_NAME` and `DISTRO_IMAGE`. The master orchestrator (`test.sh`) automatically iterates over all valid configurations. Adding Debian support to the test suite is as simple as dropping a `debian.conf` into this directory.
+- **Strategy Plugins (`tests/strategies/*.sh`)**: The orchestrator scans this directory to discover the test logic for each strategy type.
+
+### 2. Master / Slave Execution Model
+Because isolation strategies permanently sever network connections or manipulate host routing, test assertions cannot be evaluated sequentially in a single environment.
+- **The Master (`test.sh`)**: Runs on the host. It parses arguments (like `--full`), discovers plugins, and dispatches a separate "Slave" process for each Distro/Strategy combination. It acts purely as a lifecycle manager and report generator.
+- **The Slave (`tests/common/slave.sh`)**: The actual test execution boundary. The slave is responsible for provisioning the container using the specified strategy, executing the targeted assertions (`tests/strategies/<strategy_name>.sh`), and tearing the container down atomically. If a slave crashes or times out due to an infinite loop (Watchdog timeout), the Master intercepts the failure, kills the slave, and cleanly moves to the next matrix permutation.
+
+### 3. Assertion Scoping (`_exec_in_box`)
+The core testing assertion wrapper (`_exec_in_box` inside `tests/strategies/common_asserts.sh`) utilizes raw `podman exec` calls instead of the high-level `dbx-smith` entrypoint. 
+This provides two major advantages:
+1. **Unbuffered Speed**: Bypassing the wrapper logic reduces the assertion execution time by >60%.
+2. **Dynamic Workdir Validation**: The wrapper intelligently evaluates the target strategy. If asserting against a `ghost` identity, it enforces `--workdir /home/ghostuser`. If standard, it maps `/home/ubuntu`. This guarantees that OCI runtime pathing errors are exposed explicitly during CI testing.

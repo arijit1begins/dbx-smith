@@ -2,10 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [1.3.1] (2026-05-10)
+## [1.3.1] (2026-05-14)
 
-### Features
+### Features & Stability
 
+* **matrix:** achieve perfect **24/24 passing integration matrix** across Alpine Linux, Arch Linux, Fedora, and Ubuntu.
+* **fedora:** implement **Path-Shadowing Proxies** via `DISTRO_PRE_INIT_HOOK` to bypass hash strictness and secure namespace PAM file permissions (`chmod 644 /etc/shadow`) for unmapped UIDs.
+* **arch:** flatten container initialization payloads into continuous single-line strings to achieve evaluation resilience against strict POSIX shells during OCI bootstrap.
+* **standard:** enforce immediate first-entry bootstrap orchestration to ensure dynamic UI profiles are provisioned prior to user attachment.
+* **test:** optimize assertion boundaries to use direct low-level `podman exec` invocations and implement dynamic container working directory lookup based on strategy context.
+* **docs:** publish comprehensive storytelling walkthrough, update man pages, and expand FAQ resources.
 * **arch:** implement a modular, "OOP-inspired" architecture utilizing **Factory Patterns** and **Dependency Injection**.
 * **distro:** add native support for **Arch Linux** and **Alpine Linux** distribution profiles.
 * **ghost:** harden ghost strategy with **passwordless sudo** and isolated **HOME** directory mapping.

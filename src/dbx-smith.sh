@@ -35,7 +35,7 @@ dbx-smith() {
     local enter_args
     enter_args=()
     if [[ -f "$REG_DIR/${box}.conf" ]]; then
-        local STRATEGY d strategy
+        local strategy
     strategy=$(grep "^STRATEGY=" "$REG_DIR/${box}.conf" | cut -d= -f2)
         if [[ "$strategy" == ghost* ]]; then
             enter_args+=(--no-workdir --additional-flags "--user ghostuser --workdir /home/ghostuser --env HOME=/home/ghostuser")

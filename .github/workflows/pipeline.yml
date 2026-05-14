@@ -50,7 +50,7 @@ jobs:
           curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh
       
       - name: Run Full Strategy Test Matrix
-        run: ./test.sh
+        run: ./test.sh --full --halt-on-failure
         env:
           PREFIX: ${{ github.workspace }}/.local
 
@@ -86,7 +86,6 @@ jobs:
             bin/ \
             src/ \
             man/ \
-            internal/ \
             Makefile \
             install.sh \
             LICENSE \
@@ -97,9 +96,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # We run semantic-release on the tag. 
-          # We specify --branches main to ensure it uses the main branch context 
-          # for calculating notes even if the checkout is detached.
+          # Allow tag clobbering to prevent internal Git fetch synchronization errors
+          git fetch --tags --force
           npx semantic-release --branches main
 
   docs:

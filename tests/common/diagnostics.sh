@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091
 # tests/common/diagnostics.sh - Diagnostic probing hooks for Podman failures
 
 # Source logger if available

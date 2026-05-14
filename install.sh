@@ -53,21 +53,22 @@ fi
 
 if [[ -n "$RC_FILE" && -f "$RC_FILE" ]]; then
     if ! grep -q "source $CONFIG_DIR/src/dbx-smith.sh" "$RC_FILE" 2>/dev/null; then
-        read -p "Would you like to automatically append the source line to $RC_FILE? (y/n) " -n 1 -r
+        read -p "Would you like to automatically prepend the source line to $RC_FILE? (y/n) " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             {
-                echo ""
                 echo "# DbxSmith Productivity Suite Runtime Core"
                 echo "source $CONFIG_DIR/src/dbx-smith.sh"
-            } >> "$RC_FILE"
+                cat "$RC_FILE"
+            } > "${RC_FILE}.tmp"
+            mv "${RC_FILE}.tmp" "$RC_FILE"
             echo "Added to $RC_FILE."
         fi
     else
         echo "Runtime core already sourced in $RC_FILE."
     fi
 else
-    echo "Could not detect default shell. Please manually append the source line:"
+    echo "Could not detect default shell. Please manually prepend the source line:"
     echo "source $CONFIG_DIR/src/dbx-smith.sh"
 fi
 

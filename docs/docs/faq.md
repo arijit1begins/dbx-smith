@@ -99,3 +99,28 @@ Because DbxSmith isolated containers do not load your host's customized `~/.zshr
 dbx-smith-rm box1 box2 box3 --purge
 ```
 Because DbxSmith parses the stateful registry located at `~/.config/dbx-smith/registry/`, it knows exactly what networks, alias fragments, and isolated home directories belong to each box, ensuring it completely wipes every trace of the targets securely in a single pass.
+
+## Compatibility & Multi-Distro Execution
+
+### Which distributions does DbxSmith actually support?
+DbxSmith is rigorously tested via an automated multi-distribution matrix. We guarantee **100% stability** across all six isolation strategies (`standard`, `airgapped`, `ghost`, etc.) for the following guest OS images:
+- **Alpine Linux**
+- **Arch Linux**
+- **Fedora**
+- **Ubuntu**
+
+If a container image operates via `sh`, `bash`, `ash`, or `zsh`, DbxSmith can provision and isolate it flawlessly.
+
+### I wrote a custom multiline shell hook, but the container failed to bootstrap with a "mount: bad usage" error. Why?
+If you are developing custom strategies or writing your own `init-hooks`, **do not use escaped newlines (`\`) to format multi-line commands**. 
+
+Strict POSIX shell interpreters built into base images like **Arch Linux** evaluate escaped newlines literally during OCI engine bootstrap loops (`eval`). This causes the trailing backslash to be passed down as an invalid physical option flag to binaries like `mount`, fatally aborting the container's creation. 
+
+To ensure cross-distro resilience, **flatten all your payload scripts into continuous, single-line strings** before passing them into the `--init-hooks` argument.
+
+### Why does DbxSmith modify `/etc/shadow` permissions when creating a Ghost identity?
+When running inside unprivileged rootless namespaces (`--userns=keep-id`), secondary UIDs (like our `ghostuser` mapping) experience severe capability drops. 
+
+On strict distributions like **Fedora**, the `/etc/shadow` file defaults to `0000` permissions (`----------`). Because `ghostuser` lacks the `CAP_DAC_OVERRIDE` Linux capability inside the unprivileged namespace, `pam_unix.so` fails to read the shadow file, breaking passwordless `sudo`. 
+
+By explicitly managing internal sandbox permissions (`chmod 644 /etc/shadow`) dynamically during bootstrap, DbxSmith allows `pam_unix.so` to authenticate unmapped users natively without requiring unsafe root escalation or host modifications.

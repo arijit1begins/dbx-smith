@@ -18,7 +18,7 @@ strategy_ghost_isolated_net_get_flags() {
     su_install_hook="echo '$(printf '%s' "$_su_install_script" | base64 | tr -d '\n')' | base64 -d | bash"
 
     local isolate_hook
-    isolate_hook="umount -l /home/$USER 2>/dev/null || true; mount -t tmpfs tmpfs /home; mkdir -p /home/ghostuser; chown ghostuser:ghostuser /home/ghostuser 2>/dev/null || true"
+    isolate_hook="umount -l /home/$USER 2>/dev/null || true; mount -t tmpfs tmpfs /home; mount -t tmpfs tmpfs /run/host/home 2>/dev/null || true; mkdir -p /home/ghostuser; chown ghostuser:ghostuser /home/ghostuser 2>/dev/null || true"
     
     # shellcheck disable=SC2034
     DBX_FLAGS=(--name "$name" --image "$image" --hostname ghost-shell --unshare-all --additional-flags "--network dbx-net-${name}" --init-hooks "$su_install_hook; $isolate_hook; $init_hook")
@@ -29,7 +29,12 @@ strategy_ghost_isolated_net_finalize() {
     name="$1" strategy="$2" image="$3" usr_alias="$4" usr_bind="$5"
 
     echo "Ghost-isolated-net strategy detected. Bootstrapping container..."
-    distrobox enter --no-workdir "$name" -- true >/dev/null 2>&1 || true
+    if [[ "${SKIP_BOOTSTRAP:-false}" != "true" ]]; then
+        distrobox enter --no-workdir "$name" -- true </dev/null || true
+    else
+        echo "[SKIP_BOOTSTRAP] Skipping distrobox first-entry bootstrap. Starting container directly..."
+        podman start "$name" >/dev/null 2>&1 || true
+    fi
 
     _create_ghostuser "$name"
 

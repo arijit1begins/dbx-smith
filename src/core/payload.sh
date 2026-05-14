@@ -50,11 +50,17 @@ sed -i "s|REPLACE_NAME|$name|g" /etc/profile.d/dbx-smith-env.sh
 # Use injected paths
 if [ -d "\$(dirname "$zshrc")" ]; then
     touch "$zshrc"
-    grep -q "dbx-smith-env.sh" "$zshrc" || echo "source /etc/profile.d/dbx-smith-env.sh" >> "$zshrc"
+    if ! grep -q "dbx-smith-env.sh" "$zshrc"; then
+        echo "source /etc/profile.d/dbx-smith-env.sh" | cat - "$zshrc" > "${zshrc}.tmp"
+        mv "${zshrc}.tmp" "$zshrc"
+    fi
 fi
 
 if [ -f "$bashrc" ]; then
-    grep -q "dbx-smith-env.sh" "$bashrc" || echo "source /etc/profile.d/dbx-smith-env.sh" >> "$bashrc"
+    if ! grep -q "dbx-smith-env.sh" "$bashrc"; then
+        echo "source /etc/profile.d/dbx-smith-env.sh" | cat - "$bashrc" > "${bashrc}.tmp"
+        mv "${bashrc}.tmp" "$bashrc"
+    fi
 fi
 
 # Bootstrap empty dotfiles

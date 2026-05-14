@@ -112,8 +112,11 @@ We follow a **Local-First, Tag-Driven Release Strategy**. GitHub Actions **NEVER
 
 ### Testing Locally
 Before submitting a PR, please run the following:
-1. **Linting**: `shellcheck bin/* src/*.sh`
-2. **Strategy Tests**: `./test.sh --full` (Requires `podman` and `distrobox` installed on your host).
+1. **Linting**: `shellcheck bin/* src/**/*.sh`
+2. **Strategy Tests**: `./test.sh --full`
+   - This executes the entire multi-distribution matrix (Alpine, Arch, Fedora, Ubuntu) across all 6 strategies.
+   - **Important**: Because distributions like Arch Linux enforce extremely strict POSIX shell evaluation during bootstrap, ensure that any new shell hooks you inject are formatted as **continuous single-line strings** without escaped newlines (`\`).
+   - Requires `podman` and `distrobox` installed on your host.
 3. **Docs Build**: `cd docs && npm run build`
 
 ## Questions?

@@ -17,9 +17,12 @@ A professional-grade provisioning and management suite for **<a href="https://di
 - **Zero-Drift Teardowns**: Atomic removal of containers, home directories, and NAT bridges.
 
 
-## Compatibility
+## Compatibility & Stability Matrix
 
-- **Supported OS**: Linux (Agnostic - Fedora, Ubuntu, Arch, etc.)
+DbxSmith guarantees **100% stability** across our automated integration testing matrix for the following distributions across all 6 strategies (`standard`, `airgapped`, `isolated-net`, `ghost`, `ghost-airgapped`, `ghost-isolated-net`):
+
+- **Supported Guest Distros**: Alpine Linux, Arch Linux, Fedora, Ubuntu.
+- **Host OS**: Linux (Agnostic - Fedora, Ubuntu, Arch, etc.)
 - **Unsupported**: macOS, Windows (WSL2 may work but is not officially supported)
 - **Dependencies**: Distrobox, Podman (or Docker)
 

@@ -70,14 +70,10 @@ main() {
         echo "========================================"
         echo "Tearing down '$target'..."
         # Exact match validation using default whitespace tokenization
-        if distrobox list --no-color | awk -v t="$target" 'NR>1 && $3==t {found=1} END {exit !found}'; then
-            echo "Stopping distrobox '$target'..."
-            distrobox stop "$target" --yes 2>/dev/null || true
-            echo "Removing distrobox '$target'..."
-            distrobox rm "$target" --yes
-        else
-            echo "Distrobox '$target' not found or not created by distrobox."
-        fi
+        # Force clean podman engine references immediately to avoid wrapper script timeouts
+        echo "Stopping and removing container '$target'..."
+        podman stop -t 2 "$target" >/dev/null 2>&1 || true
+        podman rm -f "$target" >/dev/null 2>&1 || true
 
         # Cleanup filesystem
         [[ -d "$HOME_BASE/$target" ]] && rm -rf "${HOME_BASE:?}/${target:?}" && echo "Removed isolated home directory."

@@ -100,6 +100,10 @@ main() {
     local func_name="strategy_${strategy_name//-/_}_get_flags"
     "$func_name" "$name" "$image" "$payload"
     
+    if [[ -n "${DISTRO_PRE_INIT_HOOK:-}" ]]; then
+        DBX_FLAGS+=(--pre-init-hooks "$DISTRO_PRE_INIT_HOOK")
+    fi
+    
     # Execute distrobox create
     distrobox create --yes "${DBX_FLAGS[@]}" | sed "s/distrobox enter/dbx-smith/g"
 

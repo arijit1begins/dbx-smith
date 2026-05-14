@@ -128,6 +128,12 @@ The runtime core that lives in your shell.
 Ensures zero-drift teardowns.
 - **Atomic Deletion**: It reads the registry to find exactly what was created (aliases, home directories, containers, network bridges) and wipes them in one pass.
 
+### 4. Architectural Resiliency Patterns
+To achieve 100% stability across vastly different OS boundaries (Alpine, Arch, Fedora, Ubuntu), DbxSmith implements advanced defensive layers:
+- **Path-Shadowing Proxies**: On strict distributions like Fedora, native binaries (like `chpasswd -e`) reject lightweight setup hashes. We use `DISTRO_PRE_INIT_HOOK` to dynamically write immutable bypass proxies into `/usr/local/bin`, intercepting the lower-level OCI engine bootstrap flow transparently.
+- **Rootless PAM Subversion**: Secondary unmapped UIDs (like `ghostuser`) running inside user-namespaces lack permissions to read `/etc/shadow`, breaking passwordless `sudo` verifications via `pam_unix.so`. DbxSmith automatically manages internal sandbox permissions (`chmod 644 /etc/shadow`) to unblock PAM layers seamlessly.
+- **Continuous Shell Hooks**: To bypass strict shell line-continuation parsing rules inside base images like Arch Linux, all multiline payload scripts are flattened into continuous, non-escaped strings before being shipped through the OCI engine entrypoints.
+
 ---
 
 ## Strategic Visualizations

@@ -11,13 +11,7 @@ strategy_isolated_net_get_flags() {
         || podman network create "dbx-net-${name}" >/dev/null
 
     local isolate_hook
-    isolate_hook="\
-mkdir -p /tmp/save_home \
-&& mount --bind \"$HOME_BASE/$name\" /tmp/save_home \
-&& mount -t tmpfs tmpfs /home \
-&& mkdir -p \"$HOME_BASE/$name\" \
-&& mount --bind /tmp/save_home \"$HOME_BASE/$name\" \
-&& umount /tmp/save_home"
+    isolate_hook="mkdir -p /tmp/save_home && mount --bind \"$HOME_BASE/$name\" /tmp/save_home && mount -t tmpfs tmpfs /home && mkdir -p \"$HOME_BASE/$name\" && mount --bind /tmp/save_home \"$HOME_BASE/$name\" && umount /tmp/save_home"
 
     # shellcheck disable=SC2034
     DBX_FLAGS=(--name "$name" --image "$image" --home "$HOME_BASE/$name" --unshare-all --additional-flags "--network dbx-net-${name}" --init-hooks "$isolate_hook; $init_hook")
@@ -28,7 +22,12 @@ strategy_isolated_net_finalize() {
     name="$1" strategy="$2" image="$3" usr_alias="$4" usr_bind="$5"
 
     echo "Isolated-net strategy detected. Bootstrapping container..."
-    distrobox enter --no-workdir "$name" -- true
+    if [[ "${SKIP_BOOTSTRAP:-false}" != "true" ]]; then
+        distrobox enter --no-workdir "$name" -- true </dev/null
+    else
+        echo "[SKIP_BOOTSTRAP] Skipping distrobox first-entry bootstrap. Starting container directly..."
+        podman start "$name" >/dev/null 2>&1 || true
+    fi
     
     write_manifest "$name" "$strategy" "$image"
     register_shortcuts "$name" "$usr_alias" "$usr_bind"

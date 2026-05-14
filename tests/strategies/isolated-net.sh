@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091
 # tests/strategies/isolated-net.sh - Validation plugin for 'isolated-net' strategy
 
 set -euo pipefail

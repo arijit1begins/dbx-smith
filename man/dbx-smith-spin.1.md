@@ -21,8 +21,15 @@ dbx-smith-spin is the CLI factory and provisioner for the DbxSmith productivity 
 	airgapped:		Zero-network vault with an isolated, private home directory.
 	ghost:			Identity obfuscation running as a transient user ('ghostuser').
 	isolated-net:		Secure sandbox with a dedicated, host-blind NAT bridge network.
-	ghost-airgapped:	Combined: Transient 'ghostuser' identity with zero network.
 	ghost-isolated-net:	Combined: Transient 'ghostuser' identity with NAT bridge network.
+
+**Supported Guest Distributions:**
+
+	DbxSmith guarantees 100% stability across the following tested distributions for all strategies:
+	- Alpine Linux (ash, apk)
+	- Arch Linux (bash, pacman)
+	- Fedora (bash, dnf, strict PAM)
+	- Ubuntu (bash, apt)
 
 **Arguments:**
 

@@ -27,6 +27,14 @@ strategy_standard_finalize() {
     local usr_bind
     usr_bind="$5"
 
+    echo "Standard strategy detected. Bootstrapping container..."
+    if [[ "${SKIP_BOOTSTRAP:-false}" != "true" ]]; then
+        distrobox enter --no-workdir "$name" -- true </dev/null
+    else
+        echo "[SKIP_BOOTSTRAP] Skipping distrobox first-entry bootstrap."
+        podman start "$name" >/dev/null 2>&1 || true
+    fi
+
     write_manifest "$name" "$strategy" "$image"
     register_shortcuts "$name" "$usr_alias" "$usr_bind"
 }

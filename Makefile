@@ -41,12 +41,13 @@ install:
 	@echo ""
 	@echo "=========================================================="
 	@echo "Installation complete!"
-	@echo "Please add the following line to your ~/.bashrc or ~/.zshrc:"
+	@echo "Please prepend the following line to your ~/.bashrc or ~/.zshrc:"
 	@echo "  source $(SRC_INSTALL_DIR)/dbx-smith.sh"
 	@echo "=========================================================="
 
 uninstall:
 	@echo "Removing executables..."
+	rm -f $(BIN_DIR)/dbx-smith
 	rm -f $(BIN_DIR)/dbx-smith-spin
 	rm -f $(BIN_DIR)/dbx-smith-rm
 	rm -f $(BIN_DIR)/dbx-smith-uninstall

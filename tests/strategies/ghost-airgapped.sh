@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091
 # tests/strategies/ghost-airgapped.sh - Validation plugin for 'ghost-airgapped' strategy
 
 set -euo pipefail

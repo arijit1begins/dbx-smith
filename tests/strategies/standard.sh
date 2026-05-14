@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091
 # tests/strategies/standard.sh - Validation plugin for 'standard' strategy
 
 set -euo pipefail

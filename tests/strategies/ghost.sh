@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091
 # tests/strategies/ghost.sh - Validation plugin for 'ghost' strategy
 
 set -euo pipefail

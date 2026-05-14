@@ -10,7 +10,7 @@ DbxSmith uses **Strategies** as provisioning blueprints. A strategy is a named c
 
 | Strategy | Network | Home Dir | User | Hostname | Post-Init |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `standard` | Host-Bridge | Host `$HOME` | Host-User | Host hostname | PS1 & Theme Injection |
+| `standard` | Host-Bridge | Host `$HOME` | Host-User | Host hostname | First-run bootstrap + PS1 & Theme Injection |
 | `airgapped` | **None** (post-sever) | `~/boxes/<name>` (True tmpfs isolation) | Host-User | Host hostname | First-run bootstrap → `ip link set down` interface isolation |
 | `ghost` | Host-Bridge | `~/ghostuser` (ephemeral) | `ghostuser` | `ghost-shell` | `ghostuser` creation + PS1 & Theme Injection |
 | `isolated-net` | Dedicated NAT-Bridge | `~/boxes/<name>` (True tmpfs isolation) | Host-User | Host hostname | NAT bridge creation + PS1 & Theme Injection |
@@ -123,6 +123,12 @@ This design provides:
 
 ---
 
-## Technical Implementation
+## Technical Implementation & Resiliency
+
+Building a strategy matrix that works flawlessly across Alpine, Arch, Fedora, and Ubuntu required several deep architectural workarounds:
+
+- **Pre-Bootstrapping Parity**: To ensure instantaneous environment readiness, the `standard` strategy explicitly invokes a first-entry initialization (`distrobox enter`) during finalization, guaranteeing core UI profiles are populated immediately.
+- **Continuous String Hooking**: To support strict POSIX evaluation on base distributions like **Arch Linux**, all initialization shell hooks are formatted as continuous single-line strings. This explicitly prevents shell line-continuation artifacts (like escaped newlines mapping to physical paths) from aborting the container initialization layer.
+- **Rootless PAM Capabilities**: Ghost identities are dynamically granted namespace-scoped read permissions (`chmod 644 /etc/shadow`) inside single-tenant runtimes, bypassing strict permission drops for unmapped UIDs across distributions like **Fedora**.
 
 For detailed information on how DbxSmith configures the shell, handles identity obfuscation, and manages environment persistence across different distributions, refer to the [Shell Configuration Engineering](./engineering/shell_configuration.md) deep dive.
