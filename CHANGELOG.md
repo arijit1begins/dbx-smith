@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.1](https://github.com/arijit1begins/dbx-smith/compare/v1.4.0...v1.4.1) (2026-05-15)
+
+
+### Bug Fixes
+
+* resolve shellcheck warnings in dashboard and autocomplete ([7476a69](https://github.com/arijit1begins/dbx-smith/commit/7476a69d78438c39c800e4bfc1916b3150e0cb88))
+
 ## [1.4.0](https://github.com/arijit1begins/dbx-smith/compare/v1.3.2...v1.4.0) (2026-05-15)
 
 
