@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/arijit1begins/dbx-smith/compare/v1.3.2...v1.4.0) (2026-05-15)
+
+
+### Features
+
+* comprehensive v1.4.0 release with TUI dashboard and bulk teardown ([f46bdb0](https://github.com/arijit1begins/dbx-smith/commit/f46bdb0c38121be2ae51d4de095e3e7f7727d731))
+
 ## [1.3.1] (2026-05-14)
 
 ### Features & Stability
