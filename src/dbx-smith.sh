@@ -108,7 +108,7 @@ _dbx_comp_lazy() {
     elif [[ -n "${BASH_VERSION:-}" ]]; then
         mapfile -t boxes < "$CACHE_FILE"
         local cur="${COMP_WORDS[COMP_CWORD]}"
-        COMPREPLY=( $(compgen -W "${boxes[*]}" -- "$cur") )
+        mapfile -t COMPREPLY < <(compgen -W "${boxes[*]}" -- "$cur")
     fi
 }
 

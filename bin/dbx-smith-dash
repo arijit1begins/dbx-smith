@@ -138,8 +138,8 @@ provision_container() {
             draw_dashboard
             # Persist and wait for dismissal
             while true; do
-                local err_key
-                if read -rs -n 1 -t 0.1 err_key; then
+                local _
+                if read -rs -n 1 -t 0.1 _; then
                     break
                 fi
                 draw_dashboard
@@ -295,8 +295,8 @@ draw_dashboard() {
             local empty=$(( bar_width - filled ))
             
             printf " Progress: ["
-            for ((j=0; j<filled; j++)); do printf "${GREEN}█${RESET}"; done
-            for ((j=0; j<empty; j++)); do printf "${BLUE}░${RESET}"; done
+            for ((j=0; j<filled; j++)); do printf "%b" "${GREEN}█${RESET}"; done
+            for ((j=0; j<empty; j++)); do printf "%b" "${BLUE}░${RESET}"; done
             printf "] ${BOLD}%3d%%${RESET}\n" "$TASK_PROGRESS"
             
             # Log Window
@@ -382,7 +382,7 @@ handle_input() {
                     distrobox enter "$target"
                     
                     echo -e "\n${YELLOW}Disconnected from '$target'. Press any key to return to dashboard...${RESET}"
-                    read -n 1 -s
+                    read -r -n 1 -s
                     
                     # Redirect stdout back to stderr for TUI rendering
                     exec 1>&2
