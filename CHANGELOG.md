@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.3](https://github.com/arijit1begins/dbx-smith/compare/v1.4.2...v1.4.3) (2026-05-15)
+
+
+### Bug Fixes
+
+* **ci:** allow GitHub Release job to run on tag pushes ([3319c7c](https://github.com/arijit1begins/dbx-smith/commit/3319c7cd1a7d97a649bd6546cde777676222787b))
+
 ### [1.4.2](https://github.com/arijit1begins/dbx-smith/compare/v1.4.1...v1.4.2) (2026-05-15)
 
 ### [1.4.1](https://github.com/arijit1begins/dbx-smith/compare/v1.4.0...v1.4.1) (2026-05-15)
