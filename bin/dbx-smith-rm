@@ -25,6 +25,8 @@ usage() {
     echo ""
     echo "Options:"
     echo "  -h, --help    Show this help message"
+    echo "  -a, --all     Tear down all containers found in the registry or distrobox."
+    echo "  -f, --force   Force removal without confirmation prompt."
     echo "  -p, --purge   Deep clean: Purge container, isolated home dir, registry manifest,"
     echo "                shortcut fragments, isolated network bridges, and internal Podman volumes."
     echo ""
@@ -37,6 +39,8 @@ main() {
     trap 'echo "Error encountered during teardown."; exit 1' ERR
 
     local purge_volume=0
+    local all_targets=0
+    local force_removal=0
     local targets=()
 
     while [[ $# -gt 0 ]]; do
@@ -44,6 +48,14 @@ main() {
             -h|--help)
                 usage
                 exit 0
+                ;;
+            -a|--all)
+                all_targets=1
+                shift
+                ;;
+            -f|--force)
+                force_removal=1
+                shift
                 ;;
             -p|--purge)
                 purge_volume=1
@@ -60,6 +72,32 @@ main() {
                 ;;
         esac
     done
+
+    if [[ $all_targets -eq 1 ]]; then
+        # Get union of distrobox list names and registry manifest names
+        local db_names reg_names
+        db_names=$(distrobox list --no-color 2>/dev/null | awk -F'|' 'NR>1 {name=$2; gsub(/^[ \t]+|[ \t]+$/, "", name); if(name!="") print name}')
+        reg_names=""
+        if [[ -d "$REG_DIR" ]]; then
+            reg_names=$(find "$REG_DIR" -maxdepth 1 -name "*.conf" -exec basename {} .conf \;)
+        fi
+        
+        # Merge and unique
+        mapfile -t targets < <(echo -e "$db_names\n$reg_names" | grep -v "^$" | sort -u)
+        
+        if [[ ${#targets[@]} -eq 0 ]]; then
+            echo "No containers found to remove."
+            exit 0
+        fi
+        
+        echo "The following containers will be removed: ${targets[*]}"
+        if [[ $force_removal -eq 1 ]] || [[ ! -t 0 ]] || whiptail --title "Confirm Bulk Removal" --yesno "Are you sure you want to remove ALL (${#targets[@]}) containers?" 8 60; then
+            echo "Proceeding with bulk removal..."
+        else
+            echo "Aborted."
+            exit 0
+        fi
+    fi
 
     if [[ ${#targets[@]} -eq 0 ]]; then
         usage >&2

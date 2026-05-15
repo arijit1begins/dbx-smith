@@ -1,0 +1,553 @@
+#!/usr/bin/env bash
+# dbx-smith-dash - The DbxSmith Interactive Dashboard
+# A pure Bash TUI for navigating and managing Distrobox containers.
+
+# --- [ Dependency Injection & Module Loading ] ---
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
+SRC_DIR="$CONFIG_DIR/src"
+
+# Developer override: if running from a local clone, prioritize the local src/
+REPO_SRC="$(dirname "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")")/src"
+if [[ -d "$REPO_SRC" ]]; then
+    SRC_DIR="$REPO_SRC"
+fi
+readonly SRC_DIR
+
+# shellcheck source=src/core/constants.sh
+# shellcheck disable=SC1091
+source "${SRC_DIR}/core/constants.sh"
+
+# --- [ Colors & ANSI ] ---
+ESC=$(printf '\033')
+RESET="${ESC}[0m"
+BOLD="${ESC}[1m"
+CYAN="${ESC}[36m"
+GREEN="${ESC}[32m"
+YELLOW="${ESC}[33m"
+MAGENTA="${ESC}[35m"
+BLUE="${ESC}[34m"
+RED="${ESC}[31m"
+BG_BLUE="${ESC}[44m"
+
+# --- [ State ] ---
+SELECTED_INDEX=0
+BOX_NAMES=()
+BOX_DISPLAY_NAMES=()
+BOX_STRATEGIES=()
+BOX_IMAGES=()
+BOX_STATUSES=()
+BOX_CREATED=()
+
+# --- [ Task State ] ---
+TASK_ACTIVE=false
+TASK_NAME=""
+TASK_PROGRESS=0
+TASK_LOGS=()
+TASK_LOGS_EXPANDED=false
+TASK_PID=""
+
+# Dynamic dimensions
+update_dimensions() {
+    TERMINAL_ROWS=$(tput lines 2>/dev/null || echo 24)
+    TERMINAL_COLS=$(tput cols 2>/dev/null || echo 80)
+    [[ "$TERMINAL_ROWS" -lt 10 ]] && TERMINAL_ROWS=24
+    [[ "$TERMINAL_COLS" -lt 40 ]] && TERMINAL_COLS=80
+}
+update_dimensions
+
+# --- [ Task Handling ] ---
+provision_container() {
+    local strategy="$1" name="$2" image="$3" alias="$4"
+    
+    TASK_ACTIVE=true
+    TASK_NAME="Provisioning '$name'"
+    TASK_PROGRESS=5
+    TASK_LOGS=()
+    
+    # Start the spin process in background
+    local log_pipe
+    log_pipe=$(mktemp -u)
+    mkfifo "$log_pipe"
+    
+    # Run the spin command and pipe output to our fifo
+    dbx-smith-spin "$strategy" "$name" "$image" "$alias" > "$log_pipe" 2>&1 &
+    TASK_PID=$!
+    
+    # Non-blocking read from pipe
+    exec 4< "$log_pipe"
+    
+    # Use non-blocking read for keys during provisioning
+    stty -echo -icanon min 0 time 1
+    
+    while kill -0 "$TASK_PID" 2>/dev/null; do
+        # Use read with a timeout for logs
+        if read -r -t 0.05 line <&4; then
+            TASK_LOGS+=("$line")
+            # Heuristic progress update
+            case "$line" in
+                *Creating*container*) TASK_PROGRESS=20 ;;
+                *Initialing*environment*) TASK_PROGRESS=40 ;;
+                *Strategy*detected*) TASK_PROGRESS=60 ;;
+                *Successfully*provisioned*) TASK_PROGRESS=95 ;;
+            esac
+            # Gradual increment
+            [[ $TASK_PROGRESS -lt 90 ]] && (( TASK_PROGRESS++ ))
+        else
+            sleep 0.02 # Reduce CPU usage when idle
+        fi
+        
+        # Check for interrupt key
+        local pkey
+        if read -rs -n 1 -t 0.01 pkey; then
+            if [[ "$pkey" == $'\x1b' ]]; then
+                read -rs -n 2 -t 0.01 next_part
+                pkey+="$next_part"
+            fi
+            
+            if [[ "$pkey" == "q" ]]; then
+                kill "$TASK_PID" 2>/dev/null || true
+                TASK_ACTIVE=false
+                echo -e "\n${RED}Provisioning interrupted.${RESET}"
+                sleep 1
+                break
+            elif [[ "$pkey" == "l" ]]; then
+                if [[ "$TASK_LOGS_EXPANDED" == "true" ]]; then
+                    TASK_LOGS_EXPANDED=false
+                else
+                    TASK_LOGS_EXPANDED=true
+                fi
+            fi
+        fi
+        
+        draw_dashboard
+    done
+    
+    if [[ "$TASK_ACTIVE" == "true" ]]; then
+        wait "$TASK_PID"
+        local exit_code=$?
+        
+        TASK_PROGRESS=100
+        if [[ $exit_code -eq 0 ]]; then
+            TASK_LOGS+=("✔ Provisioning complete.")
+            draw_dashboard
+            sleep 1
+            TASK_ACTIVE=false
+        else
+            TASK_NAME="Provisioning FAILED"
+            TASK_LOGS+=("❌ Error: Provisioning exited with code $exit_code")
+            draw_dashboard
+            # Persist and wait for dismissal
+            while true; do
+                local err_key
+                if read -rs -n 1 -t 0.1 err_key; then
+                    break
+                fi
+                draw_dashboard
+            done
+            TASK_ACTIVE=false
+        fi
+    fi
+    
+    # Cleanup
+    exec 4<&-
+    rm -f "$log_pipe"
+    fetch_data
+    stty -echo -icanon min 1
+}
+
+cleanup() {
+    tput cnorm # Show cursor
+    stty echo  # Enable echo
+    tput sgr0  # Reset colors
+    echo -e "${RESET}"
+}
+trap cleanup EXIT
+
+# --- [ Data Retrieval ] ---
+fetch_data() {
+    BOX_NAMES=()
+    BOX_DISPLAY_NAMES=()
+    BOX_STRATEGIES=()
+    BOX_IMAGES=()
+    BOX_STATUSES=()
+    BOX_CREATED=()
+
+    local db_list
+    # Extract NAME, STATUS, IMAGE columns using awk with pipe delimiter
+    db_list=$(distrobox list --no-color 2>/dev/null | awk -F'|' 'NR>1 {
+        id=$1; gsub(/^[ \t]+|[ \t]+$/, "", id);
+        if (id ~ /^[0-9a-fA-F]{12,}$/) {
+            gsub(/^[ \t]+|[ \t]+$/, "", $2);
+            gsub(/^[ \t]+|[ \t]+$/, "", $3);
+            gsub(/^[ \t]+|[ \t]+$/, "", $4);
+            print $2 "|" $3 "|" $4
+        }
+    }' || echo "")
+
+    if [[ -z "$db_list" ]]; then
+        return
+    fi
+
+    while IFS='|' read -r name status image; do
+        [[ -z "$name" ]] && continue
+        
+        BOX_NAMES+=("$name")
+        BOX_DISPLAY_NAMES+=("${name:0:18}")
+        BOX_STATUSES+=("${status:0:15}")
+        BOX_IMAGES+=("$image")
+
+        local strategy="unknown"
+        local created="N/A"
+        if [[ -f "$REG_DIR/${name}.conf" ]]; then
+            strategy=$(grep "^STRATEGY=" "$REG_DIR/${name}.conf" | cut -d= -f2 || echo "unknown")
+            created=$(grep "^CREATED_AT=" "$REG_DIR/${name}.conf" | cut -d= -f2 | cut -d'T' -f1 || echo "N/A")
+        fi
+        BOX_STRATEGIES+=("${strategy:0:12}")
+        BOX_CREATED+=("$created")
+    done <<< "$db_list"
+}
+
+# --- [ Rendering Engine ] ---
+draw_dashboard() {
+    update_dimensions
+    # Redirect all UI output to stderr to keep stdout clean for --print-selected
+    {
+        tput cup 0 0
+        tput civis # Hide cursor
+        
+        # Header
+        printf "${BOLD}${CYAN}%-${TERMINAL_COLS}s${RESET}\n" " DbxSmith Dashboard v$VERSION"
+        printf "${BLUE}%-${TERMINAL_COLS}s${RESET}\n" "$(printf '%.0s─' $(seq 1 "$TERMINAL_COLS"))"
+        
+        # Table Header
+        printf "${BOLD}%-3s %-18s %-12s %-25s %-15s %-10s${RESET}\n" "" "NAME" "STRATEGY" "IMAGE" "STATUS" "CREATED"
+        printf "   %-18s %-12s %-25s %-15s %-10s\n" "------------------" "------------" "-------------------------" "---------------" "----------"
+
+        local max_rows=$((TERMINAL_ROWS - 15))
+        [[ $TASK_LOGS_EXPANDED == "true" ]] && max_rows=$((max_rows - 7))
+        
+        local row_count=0
+        if [[ ${#BOX_NAMES[@]} -eq 0 ]]; then
+            tput cup 6 0
+            printf "   ${YELLOW}%-${TERMINAL_COLS}s${RESET}\n" "No boxes found. Press [q] to quit or [+] to create a new one."
+            row_count=1
+        else
+            for i in "${!BOX_NAMES[@]}"; do
+                [[ $i -ge $max_rows ]] && break
+                ((row_count++))
+                
+                local prefix="  "
+                local style="$RESET"
+                if [[ $i -eq $SELECTED_INDEX ]]; then
+                    prefix="> "
+                    style="${BG_BLUE}${BOLD}"
+                fi
+
+                local name="${BOX_NAMES[$i]}"
+                local display_name="${BOX_DISPLAY_NAMES[$i]}"
+                local strategy="${BOX_STRATEGIES[$i]}"
+                local image="${BOX_IMAGES[$i]}"
+                local status="${BOX_STATUSES[$i]}"
+                local created="${BOX_CREATED[$i]}"
+
+                # Truncate image
+                [[ ${#image} -gt 24 ]] && image="${image:0:21}..."
+
+                # Status color
+                local stat_color="$RESET"
+                [[ "$status" == Up* ]] && stat_color="$GREEN"
+                
+                # Strategy color
+                local strat_color="$RESET"
+                case "$strategy" in
+                    standard) strat_color="$GREEN" ;;
+                    ghost*)   strat_color="$YELLOW" ;;
+                    airgapped*) strat_color="$CYAN" ;;
+                    isolated*) strat_color="$BLUE" ;;
+                esac
+
+                # Apply selection style if active
+                if [[ $i -eq $SELECTED_INDEX ]]; then
+                    printf "${style}%-3s %-18s %-12s %-25s %-15s %-10s${RESET}\n" \
+                        "$prefix" "$display_name" "$strategy" "$image" "$status" "$created"
+                else
+                    printf "%-3s %-18s ${strat_color}%-12s${RESET} %-25s ${stat_color}%-15s${RESET} %-10s\n" \
+                        "$prefix" "$display_name" "$strategy" "$image" "$status" "$created"
+                fi
+            done
+        fi
+        
+        # Clear any leftover rows from the previous table if it was longer
+        local empty_rows=$(( max_rows - row_count ))
+        for ((k=0; k<empty_rows; k++)); do printf "%-${TERMINAL_COLS}s\n" ""; done
+
+        # Footer / Task Overlay
+        if [[ "$TASK_ACTIVE" == "true" ]]; then
+            tput cup $((TERMINAL_ROWS - 14)) 0
+            [[ $TASK_LOGS_EXPANDED == "true" ]] && tput cup $((TERMINAL_ROWS - 19)) 0
+            
+            printf "${BLUE}%-${TERMINAL_COLS}s${RESET}\n" "$(printf '%.0s━' $(seq 1 "$TERMINAL_COLS"))"
+            printf "${BOLD}${MAGENTA} [ACTIVE TASK] %-$((TERMINAL_COLS-16))s${RESET}\n" "$TASK_NAME"
+            
+            # Modern Block Progress Bar
+            local bar_width=$((TERMINAL_COLS - 22))
+            local filled=$(( bar_width * TASK_PROGRESS / 100 ))
+            local empty=$(( bar_width - filled ))
+            
+            printf " Progress: ["
+            for ((j=0; j<filled; j++)); do printf "${GREEN}█${RESET}"; done
+            for ((j=0; j<empty; j++)); do printf "${BLUE}░${RESET}"; done
+            printf "] ${BOLD}%3d%%${RESET}\n" "$TASK_PROGRESS"
+            
+            # Log Window
+            local log_lines=3
+            [[ "$TASK_LOGS_EXPANDED" == "true" ]] && log_lines=10
+            
+            printf " ${BOLD}${CYAN}%-${TERMINAL_COLS}s${RESET}\n" "Detailed Logs:"
+            for (( i=${#TASK_LOGS[@]}-log_lines; i<${#TASK_LOGS[@]}; i++ )); do
+                if [[ $i -ge 0 ]]; then
+                    printf "  ${BLUE}│${RESET} %-$((TERMINAL_COLS-5))s\n" "${TASK_LOGS[$i]:0:$((TERMINAL_COLS-10))}"
+                else
+                    printf "  ${BLUE}│${RESET}%-$((TERMINAL_COLS-4))s\n" ""
+                fi
+            done
+            printf "${BOLD}${RED} [q] Interrupt  ${CYAN}[l] Toggle Logs %-$((TERMINAL_COLS-30))s${RESET}" ""
+        else
+            # Clear task overlay area if inactive
+            tput cup $((TERMINAL_ROWS - 14)) 0
+            for ((k=0; k<12; k++)); do printf "%-${TERMINAL_COLS}s\n" ""; done
+            
+            tput cup $((TERMINAL_ROWS - 2)) 0
+            printf "${BLUE}%-${TERMINAL_COLS}s${RESET}\n" "$(printf '%.0s─' $(seq 1 "$TERMINAL_COLS"))"
+            printf "${BOLD}${CYAN} [↑↓] Navigate  [Enter] Connect  [+] Create  [s] Stop  [r] Remove  [q] Quit %-$((TERMINAL_COLS-80))s${RESET}" ""
+        fi
+    } >&2
+}
+
+# --- [ Args ] ---
+PRINT_SELECTED=false
+if [[ "${1:-}" == "--print-selected" ]]; then
+    PRINT_SELECTED=true
+fi
+
+# --- [ Input Handling ] ---
+handle_input() {
+    # Set terminal to raw mode and block until input is available
+    stty -echo -icanon min 1
+    
+    local key
+    while true; do
+        draw_dashboard
+        
+        # Read key
+        local key
+        if ! read -rs -n 1 key; then
+            continue
+        fi
+        
+        # Handle escape sequences for arrows
+        if [[ "$key" == $'\x1b' ]]; then
+            read -rs -n 2 -t 0.01 next_part
+            key+="$next_part"
+        fi
+        
+        case "$key" in
+            $'\x1b[A') # Up Arrow
+                if [[ $SELECTED_INDEX -gt 0 ]]; then
+                    (( SELECTED_INDEX-- )) || true
+                fi
+                ;;
+            $'\x1b[B') # Down Arrow
+                if [[ $SELECTED_INDEX -lt $(( ${#BOX_NAMES[@]} - 1 )) ]]; then
+                    (( SELECTED_INDEX++ )) || true
+                fi
+                ;;
+            $'\n'|$'\r'|"") # Enter
+                if [[ ${#BOX_NAMES[@]} -gt 0 ]]; then
+                    local target="${BOX_NAMES[$SELECTED_INDEX]}"
+                    if [[ "$PRINT_SELECTED" == "true" ]]; then
+                        cleanup
+                        tput rmcup
+                        echo "$target" >&3
+                        exit 0
+                    fi
+                    
+                    cleanup
+                    tput rmcup
+                    
+                    # Restore stdout for the interactive connection
+                    exec 1>&3
+                    
+                    echo -e "${BOLD}${CYAN}Connecting to '$target'...${RESET}"
+                    distrobox enter "$target"
+                    
+                    echo -e "\n${YELLOW}Disconnected from '$target'. Press any key to return to dashboard...${RESET}"
+                    read -n 1 -s
+                    
+                    # Redirect stdout back to stderr for TUI rendering
+                    exec 1>&2
+                    
+                    tput smcup
+                    tput clear
+                    stty -echo -icanon min 1
+                fi
+                ;;
+            "+"|"=")
+                cleanup
+                tput rmcup
+                
+                local step=1
+                local strategy=""
+                local name=""
+                local image="fedora:latest"
+                local alias=""
+                
+                while [[ $step -gt 0 && $step -lt 5 ]]; do
+                    local status=0
+                    case $step in
+                        1) # Choose Strategy
+                            local strategies=()
+                            for s in "$SRC_DIR"/strategies/*.sh; do
+                                local sname
+                                sname=$(basename "$s" .sh)
+                                [[ "$sname" == "factory" ]] && continue
+                                strategies+=("$sname" "")
+                            done
+                            strategy=$(whiptail --title "DbxSmith: Strategy (Step 1/4) [Esc: Back]" \
+                                --menu "Select a container strategy:" 15 60 6 "${strategies[@]}" 3>&1 1>&2 2>&3)
+                            status=$?
+                            ;;
+                        2) # Name
+                            name=$(whiptail --title "DbxSmith: Box Name (Step 2/4)" \
+                                --inputbox "Enter a unique name for this box:\n\n(Use [Esc] to go back to Strategy)" 10 60 "$name" 3>&1 1>&2 2>&3)
+                            status=$?
+                            ;;
+                        3) # Image
+                            image=$(whiptail --title "DbxSmith: Image (Step 3/4)" \
+                                --inputbox "Enter the container image (e.g. fedora:latest):\n\n(Use [Esc] to go back to Name)" 10 60 "$image" 3>&1 1>&2 2>&3)
+                            status=$?
+                            ;;
+                        4) # Alias
+                            alias=$(whiptail --title "DbxSmith: Alias (Step 4/4)" \
+                                --inputbox "Enter an optional shell alias:\n\n(Use [Esc] to go back to Image)" 10 60 "$alias" 3>&1 1>&2 2>&3)
+                            status=$?
+                            ;;
+                    esac
+
+                    if [[ $status -eq 0 ]]; then
+                        ((step++))
+                    elif [[ $status -eq 255 ]]; then
+                        ((step--))
+                    else
+                        # Cancel (1) or other errors: abort wizard
+                        step=0
+                    fi
+                done
+
+                if [[ $step -eq 5 ]]; then
+                    # Execute creation with the new provisioning flow
+                    tput smcup
+                    tput clear
+                    provision_container "$strategy" "$name" "$image" "$alias"
+                fi
+                
+                # Always restore TUI state
+                tput smcup
+                tput clear
+                stty -echo -icanon min 1
+                ;;
+            $'\x1b'|"q") # Esc or q
+                if [[ "$TASK_ACTIVE" == "true" ]]; then
+                    kill "$TASK_PID" 2>/dev/null || true
+                    TASK_ACTIVE=false
+                    echo -e "\n${RED}Provisioning interrupted.${RESET}"
+                    sleep 1
+                    fetch_data
+                else
+                    exit 0
+                fi
+                ;;
+            "s")
+                if [[ ${#BOX_NAMES[@]} -gt 0 ]]; then
+                    local target="${BOX_NAMES[$SELECTED_INDEX]}"
+                    # Show a brief status message
+                    tput cup $((TERMINAL_ROWS - 1)) 0
+                    echo -n -e "${YELLOW}Stopping '$target'...${RESET}"
+                    distrobox stop "$target" --yes >/dev/null 2>&1 || true
+                    fetch_data
+                fi
+                ;;
+            "r")
+                if [[ ${#BOX_NAMES[@]} -gt 0 ]]; then
+                    local target="${BOX_NAMES[$SELECTED_INDEX]}"
+                    if (whiptail --title "Confirm Removal" --yesno "Are you sure you want to remove container '$target'?" 8 60); then
+                        # Start background removal task
+                        TASK_ACTIVE=true
+                        TASK_NAME="Removing '$target'"
+                        TASK_PROGRESS=10
+                        TASK_LOGS=()
+                        
+                        local log_pipe
+                        log_pipe=$(mktemp -u)
+                        mkfifo "$log_pipe"
+                        
+                        dbx-smith-rm "$target" > "$log_pipe" 2>&1 &
+                        TASK_PID=$!
+                        
+                        exec 4< "$log_pipe"
+                        stty -echo -icanon min 0 time 1
+                        
+                        while kill -0 "$TASK_PID" 2>/dev/null; do
+                            if read -r -t 0.05 line <&4; then
+                                TASK_LOGS+=("$line")
+                                # Simple heuristic for removal progress
+                                case "$line" in
+                                    *Stopping*) TASK_PROGRESS=30 ;;
+                                    *Removing*) TASK_PROGRESS=60 ;;
+                                    *Teardown*complete*) TASK_PROGRESS=100 ;;
+                                esac
+                                [[ $TASK_PROGRESS -lt 95 ]] && (( TASK_PROGRESS++ ))
+                            fi
+                            draw_dashboard
+                        done
+                        
+                        wait "$TASK_PID"
+                        TASK_PROGRESS=100
+                        TASK_LOGS+=("✔ Removal complete.")
+                        draw_dashboard
+                        sleep 1
+                        
+                        exec 4<&-
+                        rm -f "$log_pipe"
+                        TASK_ACTIVE=false
+                        fetch_data
+                    fi
+                    # Restore TUI state
+                    tput smcup
+                    tput clear
+                    stty -echo -icanon min 1
+                fi
+                ;;
+        esac
+    done
+}
+
+main() {
+    # Save original stdout to fd 3 and redirect stdout to stderr for TUI
+    exec 3>&1
+    exec 1>&2
+    
+    # Enter Alternate Screen Mode
+    tput smcup
+    tput clear
+    tput civis # Hide cursor
+    
+    fetch_data
+    handle_input
+    
+    # Restore screen and cursor
+    tput cnorm
+    tput rmcup
+}
+
+main

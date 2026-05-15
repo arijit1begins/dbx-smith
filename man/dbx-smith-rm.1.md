@@ -13,6 +13,8 @@ dbx-smith-rm is the atomic destructor for Distrobox containers and their associa
 **dbx-smith-rm** [options] <box_name> [box_name_2 ...]
 
 	--help/-h:		show this help message
+	--all/-a:		Tear down all containers found in the registry or distrobox.
+	--force/-f:		Force removal without confirmation prompt.
 	--purge/-p:		Deep clean: Purge container, isolated home dir, registry manifest,
 				shortcut fragments, isolated network bridges, and internal Podman volumes.
 
@@ -25,3 +27,7 @@ Remove a container and its basic configuration:
 Perform a deep purge of a container, including all volumes and network bridges:
 
 	dbx-smith-rm --purge my-vault
+
+Bulk remove all containers without confirmation:
+
+	dbx-smith-rm --all --force

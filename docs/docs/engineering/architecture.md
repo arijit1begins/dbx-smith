@@ -14,15 +14,17 @@ There are three CLI tools, each owning a distinct phase of a box's lifecycle:
 
 | Tool | Role | Key Actions |
 | :--- | :--- | :--- |
+| `dbx-smith-dash` | **Mission Control** | Interactive TUI for navigating, connecting, and managing boxes |
 | `dbx-smith-spin` | **Provisioner** | Reads strategy → creates container → writes registry manifest → generates alias fragment |
 | `dbx-smith` (runtime) | **Entry Point** | Reads registry → enters correct box as correct user → resets terminal on exit |
-| `dbx-smith-rm` | **Destructor** | Stops container → removes home dir, alias fragment, network bridge, registry manifest |
+| `dbx-smith-rm` | **Destructor** | Stops container → removes home dir, alias fragment, network bridge, registry manifest. Supports `--all` for bulk teardown. |
 
 ### Prerequisites
 
 | Category | Tools | Purpose |
 | :--- | :--- | :--- |
 | **Engine** | `distrobox`, `podman` | Container creation and management |
+| **UI** | `whiptail`, `tput` | Creation wizard and TUI rendering |
 | **Utilities** | `cksum` | Deterministic color derivation from image name |
 | **Utilities** | `base64` | Zero-escape init-hook payload injection |
 | **Utilities** | `awk`, `grep` | Registry parsing and container list filtering |
@@ -33,11 +35,13 @@ There are three CLI tools, each owning a distinct phase of a box's lifecycle:
 graph LR
     User([User])
 
-    User -->|"1. spin strategy"| Spin
-    User -->|"4. dbx-smith box"| Runtime
-    User -->|"7. dbx-smith-rm box"| RM
+    User -->|"1. dbx-smith dash"| Dash
+    Dash -->|"2. wizard / actions"| Spin
+    Dash -->|"2. enter box"| Runtime
+    Dash -->|"2. stop / rm"| RM
 
     subgraph DbxSmith ["DbxSmith Layer"]
+        Dash["dbx-smith-dash\n(Mission Control)"]
         Spin["dbx-smith-spin\n(Provisioner)"]
         Runtime["dbx-smith\n(Runtime)"]
         RM["dbx-smith-rm\n(Destructor)"]
@@ -96,10 +100,12 @@ sequenceDiagram
     D-->>C: 7. Container created, home dir initialised
     C-->>C: 8. Init-hook executes: writes /etc/profile.d/dbx-smith-env.sh + /etc/zsh/zshrc
 
-    note over U,R: Phase 4 — Airgap Sever (airgapped strategy only)
+    note over U,R: Phase 4 — The Freeze/Rebuild Cycle (airgapped only)
     alt Strategy is Airgapped
-        S->>D: 9a. distrobox enter [name] -- true (trigger first-run package install)
-        S->>D: 9b. Container executes `ip link set down` loop internally
+        S->>D: 9a. distrobox enter (trigger package install: iproute2/sudo)
+        S->>D: 9b. podman commit (freeze provisioned state)
+        S->>D: 9c. distrobox rm (destroy temporary bootstrap container)
+        S->>D: 9d. distrobox create --network none --image [frozen_image]
     end
 
     note over U,R: Phase 5 — State Registration
@@ -146,7 +152,7 @@ To achieve 100% stability across vastly different OS boundaries (Alpine, Arch, F
 
 ### Airgapped Strategy
 *   **Visual**: A custom PS1 with a cyan `(<name>)` marker and a deterministic background color (derived from the image hash).
-*   **Networking**: After provisioning, `ping` returns "Network is unreachable". The container's network namespace is fully detached — no bridge, no DNS, no external routing. This is achieved by destroying the temporary Podman network post-init, not by setting a flag at create time.
+*   **Networking**: Absolute physical isolation. The container is re-created with `--network none` after an initial bootstrap phase. This ensures zero network interfaces (except `lo`) exist from the moment the user first enters the box. `ping` returns "Network is unreachable" immediately.
 *   **Home Dir (True tmpfs isolation)**: Distrobox enforces a strict behavior where it always bind-mounts the host's default home directory (e.g., `/home/username`) into the container, even when a custom `--home` flag is provided. To bypass this and achieve true isolation, DbxSmith over-mounts the entire `/home` directory with an empty `tmpfs` RAM disk at the container level. The custom home directory (`~/boxes/<name>`) is then cleanly bind-mounted back into this empty space. This ensures host dotfiles, SSH keys, and history (`~/.ssh`, `~/.gnupg`, etc.) are completely invisible and unreachable from inside the container, preventing dotfile leaks.
 *   **Use Case**: Analyzing untrusted scripts, managing private keys, or "focused" offline coding.
 

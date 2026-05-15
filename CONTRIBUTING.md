@@ -110,6 +110,29 @@ We follow a **Local-First, Tag-Driven Release Strategy**. GitHub Actions **NEVER
 ### Troubleshooting CI/CD
 - **ShellCheck Warnings**: The CI will fail if ShellCheck finds issues. Run `shellcheck bin/* src/*.sh` locally before pushing.
 
+### Hacking the TUI Dashboard
+
+The DbxSmith dashboard (`bin/dbx-smith-dash`) is a pure Bash TUI. If you want to contribute to the UI, keep these architectural principles in mind:
+
+### 1. The Rendering Engine
+We do NOT use `clear` or `reset`. All drawing is done via `draw_dashboard` which:
+- Uses `tput cup row col` to place the cursor.
+- Overwrites lines completely to avoid trailing characters.
+- Uses the Alternate Screen Buffer (`smcup`/`rmcup`) to preserve the user's terminal state.
+
+### 2. State Management
+All UI state is stored in global variables (e.g., `SELECTED_INDEX`, `TASK_ACTIVE`, `BOX_NAMES`). The `fetch_data` function should be called sparingly (only when container states actually change) to keep the UI snappy.
+
+### 3. Asynchronous Tasks
+If you are adding a new long-running command:
+- Run it in the background: `cmd > "$log_pipe" 2>&1 &`.
+- Use `TASK_PID=$!` to track it.
+- Implement a polling loop in the UI that reads from the FIFO with a short timeout (`read -t 0.05`).
+- Use `TASK_PROGRESS` and `TASK_LOGS` to update the overlay.
+
+### 4. Testing
+Always test TUI changes in multiple terminal sizes. Use `bash -x bin/dbx-smith-dash` for debugging, though note that it will heavily corrupt the TUI output—redirecting `xtrace` to a file is recommended.
+
 ### Testing Locally
 Before submitting a PR, please run the following:
 1. **Linting**: `shellcheck bin/* src/**/*.sh`
@@ -118,6 +141,23 @@ Before submitting a PR, please run the following:
    - **Important**: Because distributions like Arch Linux enforce extremely strict POSIX shell evaluation during bootstrap, ensure that any new shell hooks you inject are formatted as **continuous single-line strings** without escaped newlines (`\`).
    - Requires `podman` and `distrobox` installed on your host.
 3. **Docs Build**: `cd docs && npm run build`
+
+### 6. Capturing Professional Terminal Visuals
+
+To maintain a high-fidelity and authentic look, DbxSmith documentation avoids idealized AI-generated mockups in favor of **Real Terminal Captures**. We use a pipeline that renders actual terminal output into a styled HTML frame, which is then captured as a clean `.png`.
+
+#### How to Capture:
+1.  **Generate Mockup**: Use the provided automation script to run a command and generate the HTML frame:
+    ```bash
+    ./docs/scripts/capture_terminal.sh "distrobox list" "Container List" "docs/static/img/my_capture.html"
+    ```
+2.  **Screenshot**: 
+    - Open the generated `.html` file in your browser.
+    - Use a screenshot tool (like `scrot`, `maim`, or your browser's Developer Tools) to capture the terminal window.
+    - Save the resulting image to `docs/static/img/`.
+3.  **Embed**: Use relative paths in your Markdown: `![Description](/img/my_capture.png)`.
+
+This ensures that the documentation always reflects the **real** IDs, status messages, and formatting of the current DbxSmith version while looking crisp and professional.
 
 ## Questions?
 Feel free to open a Discussion on GitHub!

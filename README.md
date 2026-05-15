@@ -8,6 +8,9 @@ A professional-grade provisioning and management suite for **<a href="https://di
 📖 **[Full documentation →](https://arijit1begins.github.io/dbx-smith/docs/intro)**  
 📰 **[Read our Blog →](https://arijit1begins.github.io/dbx-smith/blog)**  
 📡 **[RSS Feed](https://arijit1begins.github.io/dbx-smith/blog/rss.xml)**
+
+![DbxSmith Dashboard Showcase](docs/static/img/dash_capture.png)
+
 ## Features
 
 - **Strategic Isolation**: Provision boxes as `standard`, `airgapped`, `isolated-net`, `ghost`, or hybrid (`ghost-airgapped`, `ghost-isolated-net`).
@@ -16,6 +19,32 @@ A professional-grade provisioning and management suite for **<a href="https://di
 - **Extensible Architecture**: Modular Factory-pattern design for strategies and DI-based distribution configurations.
 - **Zero-Drift Teardowns**: Atomic removal of containers, home directories, and NAT bridges.
 
+## ✨ Features
+- **Pure Bash TUI Dashboard**: A high-performance, asynchronous dashboard for managing containers without flickering.
+- **Asynchronous Provisioning**: Create and remove containers in the background with real-time progress tracking.
+- **Ghost Identities**: Securely isolate your host identity using ephemeral users and over-mounted home directories.
+- **Strategy-Based Workflows**: Pre-configured strategies for standard, airgapped, and isolated-net environments.
+- **Zero-Flicker Rendering**: Professional TUI experience using absolute cursor positioning.
+
+## 🚀 Quick Start
+1. **Install**: `make install`
+2. **Dashboard**: `dbx-smith dash`
+3. **Connect**: Select a box and press `Enter`
+
+## 🖥️ Interactive Dashboard
+Launch the mission control for your containers with:
+```bash
+dbx-smith dash
+```
+- **Navigate**: Use arrow keys to browse your containers.
+- **Wizard**: Press `+` for a guided creation wizard with full back-navigation support.
+- **Background Tasks**: Watch provisioning and removal happen in real-time via the task overlay.
+- **Hotkeys**: `s` (Stop), `r` (Remove), `l` (Toggle logs), `q` (Quit).
+
+## 🗑️ Atomic Destruction
+DbxSmith supports atomic bulk teardown of all containers and associated infrastructure with the new `--all` flag.
+
+![Bulk Removal Showcase](docs/static/img/rm_all_capture.png)
 
 ## Compatibility & Stability Matrix
 

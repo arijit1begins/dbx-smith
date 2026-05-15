@@ -1,0 +1,64 @@
+.TH DBX-SMITH-DASH 1 "May 2026" "DbxSmith" "User Manual"
+.SH NAME
+dbx-smith-dash \- Interactive TUI dashboard for DbxSmith
+.SH SYNOPSIS
+.B dbx-smith-dash
+[options]
+.br
+
+.B --print-selected:
+output the name of the selected box and exit on Enter. This is used by the shell function wrapper.
+.br
+
+.SH DESCRIPTION
+.B dbx-smith-dash
+is a pure Bash Terminal GUI (TUI) dashboard for managing Distrobox containers. It provides a non-flickering, color-coded interface for navigating, connecting, and performing maintenance on containers.
+
+The dashboard features an asynchronous task system that handles long-running operations (like provisioning or removal) in the background without locking the UI, providing real-time progress bars and log streaming.
+
+.SH CONTROLS
+.B Up/Down Arrows
+Navigate through the container list.
+.br
+.B Enter
+Connect to the selected container.
+.br
+.B + / =
+Open the Creation Wizard. Use [Esc] to go back between steps and [Cancel] to abort.
+.br
+.B s
+Stop the selected container safely.
+.br
+.B r
+Remove the selected container with an asynchronous task overlay.
+.br
+.B l
+Toggle the detailed log view during an active task (provisioning/removal).
+.br
+.B q / Esc
+Quit the dashboard or interrupt an active task.
+
+.SH TASK OVERLAY
+When a task is active, an overlay appears at the bottom with:
+.IP \(bu 3
+A progress bar (0-100%).
+.IP \(bu 3
+Status messages (e.g., "Provisioning 'fedora'").
+.IP \(bu 3
+Real-time log streaming from the background process.
+.PP
+On success, tasks auto-dismiss after 1 second. On failure, tasks persist to allow for log inspection and can be dismissed with any key.
+
+.SH EXAMPLES
+Launch the dashboard via the shell wrapper:
+.br
+	dbx-smith dash
+.br
+
+Launch the script directly:
+.br
+	dbx-smith-dash
+.br
+
+.SH SEE ALSO
+dbx-smith(1), dbx-smith-list(1), dbx-smith-spin(1), dbx-smith-rm(1)

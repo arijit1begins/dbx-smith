@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# dbx-smith-list - The Inventory Explorer
+# Displays a unified view of Distrobox containers with DbxSmith metadata.
+
+set -euo pipefail
+
+# --- [ Dependency Injection & Module Loading ] ---
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
+SRC_DIR="$CONFIG_DIR/src"
+
+# Developer override: if running from a local clone, prioritize the local src/
+REPO_SRC="$(dirname "$(dirname "$(readlink -f "$0" 2>/dev/null || echo "$0")")")/src"
+if [[ -d "$REPO_SRC" ]]; then
+    SRC_DIR="$REPO_SRC"
+fi
+readonly SRC_DIR
+
+# shellcheck source=src/core/constants.sh
+# shellcheck disable=SC1091
+source "${SRC_DIR}/core/constants.sh"
+
+usage() {
+    echo "Usage: dbx-smith-list [options]"
+    echo "Lists all Distrobox containers with their DbxSmith strategies and metadata."
+    echo ""
+    echo "Options:"
+    echo "  -h, --help    Show this help message"
+}
+
+# ANSI Colors
+BOLD="\033[1m"
+CYAN="\033[36m"
+GREEN="\033[32m"
+YELLOW="\033[33m"
+BLUE="\033[34m"
+RESET="\033[0m"
+
+main() {
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+        usage
+        exit 0
+    fi
+
+    # Header
+    printf "${BOLD}%-18s %-12s %-25s %-15s %-20s${RESET}\n" "NAME" "STRATEGY" "IMAGE" "STATUS" "CREATED"
+    printf "${BLUE}%-18s %-12s %-25s %-15s %-20s${RESET}\n" "------------------" "------------" "-------------------------" "---------------" "--------------------"
+
+    # Get the list of all distroboxes, filtering out noise/metadata
+    local db_list
+    db_list=$(distrobox list --no-color | awk -F'|' 'NR>1 {
+        id=$1; gsub(/^[ \t]+|[ \t]+$/, "", id);
+        if (id ~ /^[0-9a-fA-F]{12,}$/) { print $0 }
+    }')
+
+    if [[ -z "$db_list" ]]; then
+        echo "No boxes found."
+        exit 0
+    fi
+
+    echo "$db_list" | while IFS='|' read -r _ name status image; do
+        # Trim whitespace
+        name=$(echo "$name" | xargs)
+        status=$(echo "$status" | xargs)
+        image=$(echo "$image" | xargs)
+
+        local strategy="unknown"
+        local created="N/A"
+
+        # Check registry for strategy and metadata
+        if [[ -f "$REG_DIR/${name}.conf" ]]; then
+            strategy=$(grep "^STRATEGY=" "$REG_DIR/${name}.conf" | cut -d= -f2 || echo "unknown")
+            created=$(grep "^CREATED_AT=" "$REG_DIR/${name}.conf" | cut -d= -f2 | cut -d'T' -f1 || echo "N/A")
+        fi
+
+        # Colorize strategy
+        local strat_color="$RESET"
+        case "$strategy" in
+            standard) strat_color="$GREEN" ;;
+            ghost*)   strat_color="$YELLOW" ;;
+            airgapped*) strat_color="$CYAN" ;;
+            isolated*) strat_color="$BLUE" ;;
+        esac
+
+        # Truncate image name if too long
+        local display_image="$image"
+        if [[ ${#display_image} -gt 24 ]]; then
+            display_image="${display_image:0:21}..."
+        fi
+
+        # Status color
+        local stat_color="$RESET"
+        if [[ "$status" == Up* ]]; then
+            stat_color="$GREEN"
+        fi
+
+        printf "%-18s ${strat_color}%-12s${RESET} %-25s ${stat_color}%-15s${RESET} %-20s\n" \
+            "$name" "$strategy" "$display_image" "$status" "$created"
+    done
+}
+
+main "$@"

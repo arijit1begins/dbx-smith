@@ -1,0 +1,52 @@
+.TH DBX-SMITH-LIST 1 "May 2026" "DbxSmith" "User Manual"
+.SH NAME
+dbx-smith-list \- Inventory explorer for DbxSmith containers
+.SH SYNOPSIS
+.B dbx-smith-list
+[options]
+.br
+
+.B --help/-h:
+show this help message
+.br
+
+.SH DESCRIPTION
+.B dbx-smith-list
+is the inventory explorer for the DbxSmith productivity suite. It displays a unified, color-coded table of all Distrobox containers along with their DbxSmith-specific strategies, image sources, current statuses, and creation dates. This provides a more informative overview than the standard 'distrobox list' command by integrating metadata from the DbxSmith registry.
+
+.SH OUTPUT COLUMNS
+.B NAME
+The unique identifier for the Distrobox container.
+.br
+.B STRATEGY
+The isolation or identity strategy used during the creation of the container (e.g., standard, ghost, airgapped).
+.br
+.B IMAGE
+The base container image name, truncated if necessary.
+.br
+.B STATUS
+The current execution status of the container (e.g., Up, Exited).
+.br
+.B CREATED
+The date when the container was provisioned using DbxSmith.
+
+.SH EXAMPLES
+List all containers:
+.br
+
+	dbx-smith-list
+.br
+
+Show help:
+.br
+
+	dbx-smith-list --help
+.br
+
+.SH ENVIRONMENT VARIABLES
+.B XDG_CONFIG_HOME
+.br
+.B CONFIG_DIR
+.br
+.SH SEE ALSO
+dbx-smith(1), dbx-smith-spin(1), dbx-smith-rm(1)

@@ -13,7 +13,7 @@ This document is for developers contributing to or extending DbxSmith. It covers
 | Path | Category | Description |
 | :--- | :--- | :--- |
 | `install.sh` | **Entrypoint** | Quick-start installer and shell injector. |
-| `bin/` | **Executables** | CLI tools: `dbx-smith-spin`, `dbx-smith-rm`, and `dbx-smith-uninstall`. |
+| `bin/` | **Executables** | `dbx-smith-dash` (TUI), `dbx-smith-spin` (Spin), `dbx-smith-rm` (RM). |
 | `src/` | **Runtime** | `dbx-smith.sh` — shell-integrated core logic, completions, alias loader. |
 | `internal/` | **Metadata** | Design docs and templates (not shipped to users). |
 | `docs/` | **Docs Site** | Docusaurus source for the public documentation. |
@@ -23,7 +23,7 @@ This document is for developers contributing to or extending DbxSmith. It covers
 
 | Layer | Path | Content |
 | :--- | :--- | :--- |
-| **Execution** | `~/.local/bin/` | `dbx-smith-spin`, `dbx-smith-rm`, `dbx-smith-uninstall` |
+| **Execution** | `~/.local/bin/` | `dbx-smith-dash`, `dbx-smith-spin`, `dbx-smith-rm`, `dbx-smith-uninstall` |
 | **Persistence** | `~/.config/dbx-smith/` | `dbx-smith.sh`, `registry/`, `aliases.d/` |
 | **Shell** | `~/.bashrc` or `~/.zshrc` | `source ~/.config/dbx-smith/dbx-smith.sh` |
 
@@ -118,24 +118,62 @@ sequenceDiagram
 
 ---
 
-## V. Destruction Lifecycle (`dbx-smith-rm`)
+## V. Interactive Mission Control (`dbx-smith-dash`)
+
+The dashboard is a pure Bash TUI designed for sub-second responsiveness and zero flickering.
+
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "16px"}}}%%
+sequenceDiagram
+    participant U as User
+    participant D as dbx-smith-dash
+    participant F as FIFO (Pipe)
+    participant B as Background Task
+    participant E as "Engine (Spin/RM)"
+
+    U->>D: 1. Launch dash
+    D->>D: 2. Enter Alternate Screen Buffer (smcup)
+    D->>D: 3. Draw initial state
+
+    U->>D: 4. Press 'r' (Remove)
+    D->>D: 5. Create FIFO log pipe
+    D->>B: "6. Spawn dbx-smith-rm sub-process"
+    B->>E: "7. Execute removal (podman stop/rm)"
+    E-->>F: 8. Stream logs to FIFO
+
+    loop UI Polling
+        D->>D: 9. Draw Dashboard (Header + List)
+        D->>F: 10. Non-blocking read (read -t 0.05)
+        F-->>D: 11. New log line / progress
+        D->>D: 12. Draw Task Overlay (Progress + Logs)
+    end
+
+    B->>D: 13. Task Exit
+    D->>D: 14. Auto-dismiss (1s delay)
+```
+
+![Dashboard Real Capture](/img/dash_capture.png)
+
+---
+
+## VI. Destruction Lifecycle (`dbx-smith-rm`)
 
 ```mermaid
 %%{init: {"themeVariables": {"fontSize": "16px"}}}%%
 graph TD
-    Start([dbx-smith-rm targets...]) --> Parse[Parse flags: --purge and targets]
+    Start([dbx-smith-rm targets...]) --> Parse["Parse flags: --purge, --all, --force, and targets"]
     Parse --> Loop[For each target in targets]
     Loop --> Exist{Box exists?}
-    Exist --> |Yes| Stop[distrobox stop --yes]
+    Exist --> |Yes| Stop[podman stop -t 2]
     Exist --> |No| CleanupFS[Cleanup registry and aliases]
-    Stop --> Remove[distrobox rm --yes]
+    Stop --> Remove[podman rm -f]
     Remove --> CleanupFS
-    CleanupFS --> Home{~/boxes/target exists?}
-    Home --> |Yes| DelHome[rm -rf ~/boxes/target]
-    Home --> |No| Net{dbx-net-target exists?}
+    CleanupFS --> Home{"~/boxes/target exists?"}
+    Home --> |Yes| DelHome["rm -rf ~/boxes/target"]
+    Home --> |No| Net{"dbx-net-target exists?"}
     DelHome --> Net
-    Net --> |Yes| DelNet[podman network rm dbx-net-target]
-    Net --> |No| Purge{--purge flag?}
+    Net --> |Yes| DelNet["podman network rm dbx-net-target"]
+    Net --> |No| Purge{"--purge flag?"}
     DelNet --> Purge
     Purge --> |Yes| DelVol[podman volume rm target_home]
     Purge --> |No| NextTarget[Next target]
@@ -144,9 +182,11 @@ graph TD
     NextTarget -.-> |All targets processed| End([Teardown complete])
 ```
 
+![Bulk Destruction Real Capture](/img/rm_all_capture.png)
+
 ---
 
-## VI. Advanced Engineering Details
+## VII. Advanced Engineering Details
 
 For a deep dive into how DbxSmith handles shell hooks, cross-distro environment persistence, and the Ghost identity engine, see the [Shell Configuration Engineering](./shell_configuration.md) guide.
 
@@ -162,22 +202,17 @@ hook="echo '$payload' | base64 -d | sh"
 distrobox create --init-hooks "$hook" ...
 ```
 
-### 2. The Native Interface Airgap
+### 2. The Freeze/Rebuild Airgap (The Phoenix Cycle)
 
-Distrobox's first-run initializer needs internet access to install `sudo` and `mount` inside the guest. A container created with `--network none` immediately fails this step. Furthermore, rootless Podman defaults to user-mode daemons (`slirp4netns` or `pasta`) which *cannot* be dynamically disconnected from the outside using `podman network disconnect`.
+Distrobox's first-run initializer needs internet access to install `sudo` and `mount` inside the guest. A container created with `--network none` immediately fails this step. Rootless Podman also makes it difficult to dynamically sever existing bridges from the host.
 
-**Solution:** Bootstrap using the default internet-connected network, then dynamically severe all internal network interfaces after the first-run installation completes.
+**Solution: The Phoenix Cycle**
+Instead of fighting the engine, DbxSmith uses a **two-phase** provisioning flow:
+1. **The Larva Phase**: Create a standard container with network access. Run `distrobox enter` once to trigger the guest package manager and install `iproute2` and `sudo`.
+2. **The Chrysalis Phase**: Perform a `podman commit` to save the fully-provisioned guest state as a new, immutable image (`dbx-frozen-<name>`).
+3. **The Phoenix Phase**: Atomically destroy the "Larva" container and re-create it using the "Frozen" image with the `--network none` flag explicitly set.
 
-```bash
-# Inside the container's init-hook AFTER packages are installed
-for iface in $(ls /sys/class/net/ 2>/dev/null); do
-    if [ "$iface" != "lo" ]; then
-        ip link set "$iface" down 2>/dev/null || true;
-    fi;
-done
-```
-
-This ensures isolation is instantaneously effective, completely avoids relying on host firewall tools (`iptables`/`nftables`), and works seamlessly across all container environments regardless of the underlying bridge or daemon.
+This guarantees that the box is physically airgapped from its first interactive second, without requiring complex host-side firewall rules.
 
 ### 3. Exact-Match Container Validation
 
@@ -223,7 +258,7 @@ For **Ghost** strategies, it is even simpler: the `tmpfs` is mounted over `/home
 
 ---
 
-## VII. Testing Framework Architecture (`tests/`)
+## VIII. Testing Framework Architecture
 
 The DbxSmith testing suite (`test.sh`) is built on a **Decoupled Master/Slave Orchestrator Architecture**. It is designed to evaluate a massive cross-distribution matrix (Alpine, Arch, Fedora, Ubuntu) across every single isolation strategy dynamically, without hardcoding test cases.
 
@@ -235,7 +270,7 @@ The testing framework uses a plugin system to discover what to test:
 ### 2. Master / Slave Execution Model
 Because isolation strategies permanently sever network connections or manipulate host routing, test assertions cannot be evaluated sequentially in a single environment.
 - **The Master (`test.sh`)**: Runs on the host. It parses arguments (like `--full`), discovers plugins, and dispatches a separate "Slave" process for each Distro/Strategy combination. It acts purely as a lifecycle manager and report generator.
-- **The Slave (`tests/common/slave.sh`)**: The actual test execution boundary. The slave is responsible for provisioning the container using the specified strategy, executing the targeted assertions (`tests/strategies/<strategy_name>.sh`), and tearing the container down atomically. If a slave crashes or times out due to an infinite loop (Watchdog timeout), the Master intercepts the failure, kills the slave, and cleanly moves to the next matrix permutation.
+- **The Slave (`tests/common/slave_runner.sh`)**: The actual test execution boundary. The slave is responsible for provisioning the container using the specified strategy, executing the targeted assertions (`tests/strategies/<strategy_name>.sh`), and tearing the container down atomically. If a slave crashes or times out due to an infinite loop (Watchdog timeout), the Master intercepts the failure, kills the slave, and cleanly moves to the next matrix permutation.
 
 ### 3. Assertion Scoping (`_exec_in_box`)
 The core testing assertion wrapper (`_exec_in_box` inside `tests/strategies/common_asserts.sh`) utilizes raw `podman exec` calls instead of the high-level `dbx-smith` entrypoint. 

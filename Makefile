@@ -7,8 +7,8 @@ BIN_DIR = $(PREFIX)/bin
 SRC_INSTALL_DIR = $(CONFIG_DIR)/src
 MAN_DIR = $(PREFIX)/share/man/man1
 
-SCRIPTS = bin/dbx-smith-spin bin/dbx-smith-rm bin/dbx-smith-uninstall
-MAN_PAGES = man/dbx-smith-spin.1 man/dbx-smith-rm.1
+SCRIPTS = bin/dbx-smith-spin bin/dbx-smith-rm bin/dbx-smith-uninstall bin/dbx-smith-list bin/dbx-smith-dash
+MAN_PAGES = man/dbx-smith-spin.1 man/dbx-smith-rm.1 man/dbx-smith-list.1 man/dbx-smith-dash.1
 
 .PHONY: all install uninstall
 
@@ -51,10 +51,14 @@ uninstall:
 	rm -f $(BIN_DIR)/dbx-smith-spin
 	rm -f $(BIN_DIR)/dbx-smith-rm
 	rm -f $(BIN_DIR)/dbx-smith-uninstall
+	rm -f $(BIN_DIR)/dbx-smith-list
+	rm -f $(BIN_DIR)/dbx-smith-dash
 	
 	@echo "Removing man pages..."
 	rm -f $(MAN_DIR)/dbx-smith-spin.1
 	rm -f $(MAN_DIR)/dbx-smith-rm.1
+	rm -f $(MAN_DIR)/dbx-smith-list.1
+	rm -f $(MAN_DIR)/dbx-smith-dash.1
 	
 	@echo "Removing source and config directory..."
 	rm -rf $(CONFIG_DIR)

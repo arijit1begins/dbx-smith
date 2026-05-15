@@ -8,7 +8,13 @@
 #   container aliases and keybindings.
 
 # --- [ Dependency Injection & Module Loading ] ---
-_SRC_DIR="$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || readlink -f "$0" 2>/dev/null || echo "$0")")"
+# --- [ Dependency Injection & Module Loading ] ---
+if [[ -n "${ZSH_VERSION:-}" ]]; then
+    eval '_SRC_DIR=$(dirname "$(readlink -f "${(%):-%x}" 2>/dev/null || echo "$0")")'
+else
+    _SRC_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0")")
+fi
+
 # shellcheck source=src/core/constants.sh
 if [[ -f "$_SRC_DIR/core/constants.sh" ]]; then
     source "$_SRC_DIR/core/constants.sh"
@@ -19,47 +25,62 @@ else
 fi
 
 dbx-smith() {
+    if [[ "$1" == "list" ]]; then
+        dbx-smith-list "${@:2}"
+        return $?
+    elif [[ "$1" == "dash" ]]; then
+        while true; do
+            local box
+            box=$(dbx-smith-dash --print-selected)
+            [[ -z "$box" ]] && { clear; return 0; }
+            
+            # Reset terminal before entering container
+            tput rmcup 2>/dev/null || true
+            clear
+            
+            # Call dbx-smith recursively with the box name to enter it
+            dbx-smith "$box" "${@:2}"
+            
+            # Clear again before returning to dashboard
+            clear
+        done
+    fi
+
     local box
     box="$1"
-    [[ -z "$box" ]] && { echo "usage: dbx-smith <box_name> [args...]"; return 1; }
+    [[ -z "$box" ]] && { echo "usage: dbx-smith <box_name|list|dash> [args...]"; return 1; }
 
-    # Pre-flight existence validation using awk's default whitespace tokenization ($3 is NAME)
-    if ! distrobox list --no-color | awk -v b="$box" 'NR>1 && $3==b {found=1} END {exit !found}'; then
+    # Pre-flight existence validation using pipe delimiter
+    if ! distrobox list --no-color | awk -F'|' -v b="$box" 'NR>1 {
+        name=$2; gsub(/^[ \t]+|[ \t]+$/, "", name);
+        if (name==b) {found=1}
+    } END {exit !found}'; then
         echo "Error: Distrobox '$box' does not exist." >&2
-        echo "[DEBUG] Validating against the following active distroboxes:" >&2
-        distrobox list --no-color >&2
         return 1
     fi
 
     # Read manifest if exists to determine strategy-specific enter flags
-    local enter_args
-    enter_args=()
+    local enter_args=()
     if [[ -f "$REG_DIR/${box}.conf" ]]; then
         local strategy
-    strategy=$(grep "^STRATEGY=" "$REG_DIR/${box}.conf" | cut -d= -f2)
+        strategy=$(grep "^STRATEGY=" "$REG_DIR/${box}.conf" | cut -d= -f2)
         if [[ "$strategy" == ghost* ]]; then
             enter_args+=(--no-workdir --additional-flags "--user ghostuser --workdir /home/ghostuser --env HOME=/home/ghostuser")
         elif [[ "$strategy" == "airgapped" || "$strategy" == "isolated-net" ]]; then
-            # Prevent host path leakage by forcing entry into the container's isolated home
             enter_args+=(--no-workdir)
-        fi
-    else
-        # Fallback heuristic for legacy or missing registry entries
-        if podman exec "$box" grep -q "ghostuser" /etc/passwd 2>/dev/null; then
-            enter_args+=(--no-workdir --additional-flags "--user ghostuser --workdir /home/ghostuser")
         fi
     fi
 
     # Trap to ensure background reset even on SIGINT/interrupt
-    trap 'if [[ -t 1 ]]; then printf "\033]111\007\033]11;#000000\007"; fi' EXIT INT TERM
+    trap 'if [[ -t 1 ]]; then printf "\033]111\007\033]11;#000000\007"; tput cnorm; fi' EXIT INT TERM
 
     distrobox enter "${enter_args[@]}" "$box" "${@:2}"
-    local exit_code
-    exit_code=$?
+    local exit_code=$?
     
     # Explicit reset after clean exit
     if [[ -t 1 ]]; then
         printf '\033]111\007\033]11;#000000\007'
+        tput cnorm
     fi
     
     trap - EXIT INT TERM
@@ -67,33 +88,26 @@ dbx-smith() {
 }
 
 _dbx_comp_lazy() {
-    local CACHE_DIR
-    CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/dbx-smith"
-    local CACHE_FILE
-    CACHE_FILE="$CACHE_DIR/comp.db"
+    local CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/dbx-smith"
+    local CACHE_FILE="$CACHE_DIR/comp.db"
     
-    if ! command -v distrobox >/dev/null 2>&1; then
-        return 0
-    fi
+    if ! command -v distrobox >/dev/null 2>&1; then return 0; fi
 
     mkdir -p "$CACHE_DIR"
-    # Basic cache invalidation (e.g., if cache is older than 5 mins, though simple here)
     if [[ ! -f "$CACHE_FILE" ]] || [[ -n $(find "$CACHE_FILE" -mmin +5 2>/dev/null) ]]; then
-        distrobox list --no-color | awk 'NR>1 {print $3}' > "$CACHE_FILE" 2>/dev/null || true
+        distrobox list --no-color | awk -F'|' 'NR>1 {
+            name=$2; gsub(/^[ \t]+|[ \t]+$/, "", name);
+            print name
+        }' > "$CACHE_FILE" 2>/dev/null || true
     fi
 
     local boxes
-    boxes=()
-    if [[ -f "$CACHE_FILE" ]]; then
-        mapfile -t boxes < "$CACHE_FILE"
-    fi
-
     if [[ -n "${ZSH_VERSION:-}" ]]; then
+        eval 'boxes=(${(f)"$(cat "$CACHE_FILE" 2>/dev/null)"})'
         compadd -a boxes
     elif [[ -n "${BASH_VERSION:-}" ]]; then
-        local cur
-    cur="${COMP_WORDS[COMP_CWORD]}"
-        # shellcheck disable=SC2207
+        mapfile -t boxes < "$CACHE_FILE"
+        local cur="${COMP_WORDS[COMP_CWORD]}"
         COMPREPLY=( $(compgen -W "${boxes[*]}" -- "$cur") )
     fi
 }
