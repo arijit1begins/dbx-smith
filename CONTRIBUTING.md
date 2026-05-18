@@ -87,7 +87,7 @@ Our CI/CD orchestration is consolidated into `.github/workflows/pipeline.yml`, e
   - Triggered on PRs, Tags, and non-release pushes to `main`.
 - **Release Job (GitHub Release)**:
   - Triggered **ONLY** on pushed Git tags (e.g., `v1.2.3`).
-  - Uses `semantic-release` (UI only) to generate professional release notes and upload binary assets.
+  - Uses `softprops/action-gh-release` to generate professional release notes and upload production bundles/assets.
 - **Docs Job (Documentation)**:
   - Runs after a successful release to build and deploy the Docusaurus site to GitHub Pages.
 

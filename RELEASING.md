@@ -43,7 +43,7 @@ The release commit uses the `[skip branch ci]` flag.
 ## Post-Push Automation
 Once the tag is pushed, the **Unified Pipeline** (`pipeline.yml`) takes over:
 
-1. **GitHub Release**: Uses `@semantic-release/github` to create a new entry in the repository's "Releases" section, generates notes from the commits, and uploads a **Production Bundle** (`.tar.gz`) as an asset.
+1. **GitHub Release**: Uses `softprops/action-gh-release` to create a new entry in the repository's "Releases" section, automatically generates release notes from conventional commits, and uploads the **Production Bundle** (`.tar.gz`) and Quick Installer (`install.sh`) as assets.
 2. **Documentation**: Builds the Docusaurus site and deploys it to GitHub Pages, ensuring the live docs match the latest release.
 
 ## Branch Protection Rules
