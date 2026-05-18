@@ -1,76 +1,112 @@
-# DbxSmith
+# ⚒️ DbxSmith
 
 [![Unified Pipeline](https://github.com/arijit1begins/dbx-smith/actions/workflows/pipeline.yml/badge.svg)](https://github.com/arijit1begins/dbx-smith/actions/workflows/pipeline.yml)
-![License](https://img.shields.io/badge/license-Apache_2.0-green?style=flat-square)
+[![License](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-latest-green?style=flat-square)](https://arijit1begins.github.io/dbx-smith/docs/intro)
 
-A professional-grade provisioning and management suite for **<a href="https://distrobox.it/" target="_blank" rel="noopener noreferrer">Distrobox</a>** and **<a href="https://podman.io/" target="_blank" rel="noopener noreferrer">Podman</a>**. Forge isolated developer environments with strategic network control, deterministic UI, and atomic teardowns.
+**DbxSmith** is a professional-grade provisioning, management, and orchestration suite built for **<a href="https://distrobox.it/" target="_blank" rel="noopener noreferrer">Distrobox</a>** and **<a href="https://podman.io/" target="_blank" rel="noopener noreferrer">Podman</a>**. It allows developers to forge isolated, high-performance container environments with strategic network control, a deterministic terminal TUI, and atomic bulk teardowns.
 
-📖 **[Full documentation →](https://arijit1begins.github.io/dbx-smith/docs/intro)**  
-📰 **[Read our Blog →](https://arijit1begins.github.io/dbx-smith/blog)**  
-📡 **[RSS Feed](https://arijit1begins.github.io/dbx-smith/blog/rss.xml)**
+---
+
+### 🌐 Quick Navigation
+* 📖 **[Full Documentation Website →](https://arijit1begins.github.io/dbx-smith/docs/intro)**  
+* 📰 **[Release & Engineering Blog →](https://arijit1begins.github.io/dbx-smith/blog)**  
+* 📡 **[Blog RSS Feed →](https://arijit1begins.github.io/dbx-smith/blog/rss.xml)**
+
+---
 
 ![DbxSmith Dashboard Showcase](docs/static/img/dash_capture.png)
 
-## Features
+---
 
-- **Strategic Isolation**: Provision boxes as `standard`, `airgapped`, `isolated-net`, `ghost`, or hybrid (`ghost-airgapped`, `ghost-isolated-net`).
-- **True Tmpfs Home Isolation**: Prevent host dotfile leaks in secure boxes by over-mounting the host's `/home` with an ephemeral RAM disk.
-- **Visual Identity**: Deterministic background colors and dynamic PS1/PROMPT injection based on container image.
-- **Extensible Architecture**: Modular Factory-pattern design for strategies and DI-based distribution configurations.
-- **Zero-Drift Teardowns**: Atomic removal of containers, home directories, and NAT bridges.
+## 🚀 Key Features
 
-## ✨ Features
-- **Pure Bash TUI Dashboard**: A high-performance, asynchronous dashboard for managing containers without flickering.
-- **Asynchronous Provisioning**: Create and remove containers in the background with real-time progress tracking.
-- **Ghost Identities**: Securely isolate your host identity using ephemeral users and over-mounted home directories.
-- **Strategy-Based Workflows**: Pre-configured strategies for standard, airgapped, and isolated-net environments.
-- **Zero-Flicker Rendering**: Professional TUI experience using absolute cursor positioning.
+*   **⚡ Async TUI Mission Control**: A pure Bash, high-performance asynchronous terminal dashboard (`dbx-smith dash`) with absolute zero-flicker rendering.
+*   **🛡️ Host Identity Shielding (Ghost Boxes)**: ephemeral RAM-backed `tmpfs` over-mounting of `/home` to isolate host files and credentials perfectly.
+*   **🌐 6 Strategic Isolation Levels**: Pre-configured strategies including `standard`, `airgapped`, `isolated-net`, `ghost`, and secure hybrids (`ghost-airgapped`, `ghost-isolated-net`).
+*   **🎨 Visual Environment Anchoring**: Deterministic background colors and dynamic container-specific `PS1`/`PROMPT` injection based on the active container image.
+*   **🗑️ Zero-Drift Atomic Teardowns**: Bulk destruction of containers, matching RAM directories, and virtual network NAT bridges with a single command (`--all`).
 
-## 🚀 Quick Start
-1. **Install**: `make install`
-2. **Dashboard**: `dbx-smith dash`
-3. **Connect**: Select a box and press `Enter`
+---
 
-## 🖥️ Interactive Dashboard
-Launch the mission control for your containers with:
-```bash
-dbx-smith dash
-```
-- **Navigate**: Use arrow keys to browse your containers.
-- **Wizard**: Press `+` for a guided creation wizard with full back-navigation support.
-- **Background Tasks**: Watch provisioning and removal happen in real-time via the task overlay.
-- **Hotkeys**: `s` (Stop), `r` (Remove), `l` (Toggle logs), `q` (Quit).
+## 💻 Installation & Quick Start
 
-## 🗑️ Atomic Destruction
-DbxSmith supports atomic bulk teardown of all containers and associated infrastructure with the new `--all` flag.
+Get up and running with a single command:
 
-![Bulk Removal Showcase](docs/static/img/rm_all_capture.png)
-
-## Compatibility & Stability Matrix
-
-DbxSmith guarantees **100% stability** across our automated integration testing matrix for the following distributions across all 6 strategies (`standard`, `airgapped`, `isolated-net`, `ghost`, `ghost-airgapped`, `ghost-isolated-net`):
-
-- **Supported Guest Distros**: Alpine Linux, Arch Linux, Fedora, Ubuntu.
-- **Host OS**: Linux (Agnostic - Fedora, Ubuntu, Arch, etc.)
-- **Unsupported**: macOS, Windows (WSL2 may work but is not officially supported)
-- **Dependencies**: Distrobox, Podman (or Docker)
-
-## Installation
-
+### 1. One-Step Installer
 ```bash
 curl -fsSL https://raw.githubusercontent.com/arijit1begins/dbx-smith/main/install.sh | bash
 ```
 
-Or with Make after cloning:
-
+*Alternatively, clone the repository locally and run:*
 ```bash
 make install
 ```
 
-After installation, follow the on-screen instructions to source the runtime in your `~/.bashrc` or `~/.zshrc`.
+### 2. Sourcing the Runtime
+After installation completes, append the runtime configuration to your shell profile to enable the automatic identity engine:
+```bash
+# Add to ~/.bashrc or ~/.zshrc as prompted on-screen
+source ~/.dbx-smith/runtime.sh
+```
 
-## Uninstallation
+### 3. Launching Mission Control
+Forge and manage your containers instantly:
+```bash
+dbx-smith dash
+```
+
+---
+
+## 🕹️ TUI Dashboard Controls
+
+Launch the interactive dashboard with `dbx-smith dash` and navigate like a pro:
+
+| Key / Hotkey | Action | Description |
+| :---: | :--- | :--- |
+| **`↑` / `↓` Arrow Keys** | **Navigate** | Browse through your local container environments. |
+| **`Enter`** | **Connect** | Securely login and enter the selected container shell. |
+| **`+`** | **Forge Wizard** | Start a guided creation wizard with full back-navigation support. |
+| **`s`** | **Stop Box** | Stops the selected container container background processes cleanly. |
+| **`r`** | **Destroy Box**| Atomically deletes the container and its ephemeral assets. |
+| **`l`** | **Toggle Logs** | Displays real-time background provisioning and setup logs. |
+| **`q`** | **Quit** | Gracefully exits the TUI dashboard back to your host terminal. |
+
+---
+
+## 🗑️ Bulk Atomic Destruction
+
+Clean up all active containers, ephemeral home directories, and custom virtual network bridges with a single atomic command:
+
+```bash
+dbx-smith spin --remove-all
+```
+
+![Bulk Removal Showcase](docs/static/img/rm_all_capture.png)
+
+---
+
+## 📊 Compatibility & Stability Matrix
+
+DbxSmith guarantees **100% stable integration** across all 6 isolation strategies on the following architectures:
+
+| Supported Guest Distros | Host OS Support | Runtime Container Engine |
+| :--- | :--- | :--- |
+| 🟢 **Alpine Linux** | 🟢 **Linux (Agnostic)** | 🟢 **Podman** (Recommended) |
+| 🟢 **Arch Linux** | 🟢 **Fedora** | 🟢 **Distrobox** |
+| 🟢 **Fedora** | 🟢 **Ubuntu / Debian** | 🟡 **Docker** (Supported) |
+| 🟢 **Ubuntu** | 🟢 **Arch Linux** | ❌ **macOS / Windows** (Unsupported) |
+
+---
+
+## 🧹 Clean Uninstallation
+
+If you ever need to remove DbxSmith, clean up all system footprints atomically with:
 
 ```bash
 dbx-smith-uninstall
 ```
+
+---
+
+*⚒️ Happy Forging!*
