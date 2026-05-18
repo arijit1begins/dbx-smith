@@ -35,7 +35,7 @@ sed -i "s/readonly VERSION=\".*\"/readonly VERSION=\"$NEW_VERSION\"/" src/core/c
 
 # 4. Finalize Local Commit and Tag
 echo "💾 Committing version bump and creating tag v$NEW_VERSION..."
-git add package.json CHANGELOG.md src/core/constants.sh .releaserc.json .github/workflows/pipeline.yml release.sh
+git add package.json CHANGELOG.md src/core/constants.sh .github/workflows/pipeline.yml release.sh
 git commit -m "chore(release): $NEW_VERSION [skip branch ci]"
 git tag -a "v$NEW_VERSION" -m "release v$NEW_VERSION"
 
