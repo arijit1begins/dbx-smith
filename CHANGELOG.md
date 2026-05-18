@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.4](https://github.com/arijit1begins/dbx-smith/compare/v1.4.3...v1.4.4) (2026-05-18)
+
+
+### Bug Fixes
+
+* **release:** remove obsolete .releaserc.json from git add step ([1d5fa8c](https://github.com/arijit1begins/dbx-smith/commit/1d5fa8c831d43bf7dbe7663b0ca5b7b310df1f03))
+
 ### [1.4.3](https://github.com/arijit1begins/dbx-smith/compare/v1.4.2...v1.4.3) (2026-05-15)
 
 
