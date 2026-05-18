@@ -81,14 +81,12 @@ dbx-smith spin --remove-all
 
 ## 📊 Compatibility & Stability Matrix
 
-DbxSmith guarantees **100% stable integration** across all 6 isolation strategies on the following architectures:
+DbxSmith guarantees **100% stable integration** across all 6 isolation strategies:
 
-| Supported Guest Distros | Host OS Support | Runtime Container Engine |
-| :--- | :--- | :--- |
-| 🟢 **Alpine Linux** | 🟢 **Linux (Agnostic)** | 🟢 **Podman** (Recommended) |
-| 🟢 **Arch Linux** | 🟢 **Fedora** | 🟢 **Distrobox** |
-| 🟢 **Fedora** | 🟢 **Ubuntu / Debian** | 🟡 **Docker** (Supported) |
-| 🟢 **Ubuntu** | 🟢 **Arch Linux** | ❌ **macOS / Windows** (Unsupported) |
+*   **💻 Host OS Support**: Any modern Linux distribution (Ubuntu, Fedora, Debian, Arch, Alpine, etc.)
+    *   *Note: macOS and Windows are not supported.*
+*   **📦 Runtime Engines**: Podman (Recommended), Distrobox, or Docker.
+*   **🐧 Supported Guest Distros**: Alpine Linux, Arch Linux, Fedora, Ubuntu.
 
 ---
 
