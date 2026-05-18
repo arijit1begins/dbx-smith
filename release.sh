@@ -46,8 +46,8 @@ read -p "❓ Do you want to push the release to origin? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
   echo "📤 Pushing to origin..."
-  git push origin main --tags
+  git push origin main "v$NEW_VERSION"
   echo "🎉 Push successful! The GitHub Action will now trigger the Release UI and Docs update."
 else
-  echo "⚠️  Release created locally but NOT pushed. Run 'git push origin main --tags' when ready."
+  echo "⚠️  Release created locally but NOT pushed. Run 'git push origin main v$NEW_VERSION' when ready."
 fi

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 # Strategies
@@ -123,12 +123,15 @@ This design provides:
 
 ---
 
-## Technical Implementation & Resiliency
+## Technical Deep-Dives
 
-Building a strategy matrix that works flawlessly across Alpine, Arch, Fedora, and Ubuntu required several deep architectural workarounds:
+DbxSmith relies on several advanced, low-level Linux and containerization techniques to guarantee absolute sandbox isolation and cross-distribution resiliency:
 
-- **Pre-Bootstrapping Parity**: To ensure instantaneous environment readiness, the `standard` strategy explicitly invokes a first-entry initialization (`distrobox enter`) during finalization, guaranteeing core UI profiles are populated immediately.
-- **Continuous String Hooking**: To support strict POSIX evaluation on base distributions like **Arch Linux**, all initialization shell hooks are formatted as continuous single-line strings. This explicitly prevents shell line-continuation artifacts (like escaped newlines mapping to physical paths) from aborting the container initialization layer.
-- **Rootless PAM Capabilities**: Ghost identities are dynamically granted namespace-scoped read permissions (`chmod 644 /etc/shadow`) inside single-tenant runtimes, bypassing strict permission drops for unmapped UIDs across distributions like **Fedora**.
+* **The Eclipse Hack**: Dynamically over-mounting an empty RAM-backed `tmpfs` directly on top of the container's `/home` mount. This completely eclipses host home directory visibility while preserving Distrobox's strict bootstrapping process.
+* **The Phoenix Cycle**: A robust, two-phase provisioning workflow (*spin* $\rightarrow$ *commit* $\rightarrow$ *re-create*) that guarantees an airgapped container is physically spawned with zero network hardware (`--network none`) after package installation.
+* **Dynamic PAM & Hook Injections**: Automating shell configurations (`precmd` and `PROMPT_COMMAND`), bypassing unprivileged rootless namespace drops for unmapped UIDs (such as shadow file capability workarounds), and silencing Zsh interactive user-wizards automatically.
 
-For detailed information on how DbxSmith configures the shell, handles identity obfuscation, and manages environment persistence across different distributions, refer to the [Shell Configuration Engineering](./engineering/shell_configuration.md) deep dive.
+For a full, detailed breakdown of these architectural workarounds, sequence diagrams, and codebase internals, please refer to the engineering guides:
+* [System Architecture Deep-Dive](./Engineering/architecture.md)
+* [Shell Configuration & Visuals](./Engineering/shell_configuration.md)
+* [Advanced Systems Engineering Internals](./Engineering/internals.md)

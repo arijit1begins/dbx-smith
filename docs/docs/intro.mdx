@@ -20,28 +20,52 @@ Out of the box, Distrobox creates containers that share your host's home directo
 
 ## Quick Start
 
-### 1. Install
+Get up and running with DbxSmith in six simple steps:
 
+### 1. Install DbxSmith
+Run the official installer. It installs the executables to `~/.local/bin/`, sets up the config directories under `~/.config/dbx-smith/`, and appends the runtime loader to your shell profile.
 ```bash
 curl -fsSL https://raw.githubusercontent.com/arijit1begins/dbx-smith/main/install.sh | bash
 ```
 
-### 2. Provision a box
-
+### 2. Source the Shell Runtime
+Because DbxSmith integrates directly with your host shell's autocomplete and alias systems, you must source your shell configuration to activate the `dbx-smith` commands:
 ```bash
-dbx-smith-spin standard devbox docker.io/library/ubuntu:latest dev
+source ~/.bashrc  # If using Bash
+# OR
+source ~/.zshrc   # If using Zsh
 ```
 
-### 3. Enter it
+### 3. Launch TUI Mission Control (Recommended)
+The fastest and most visually stunning way to manage your sandboxes is through the interactive terminal dashboard. Launch it with:
+```bash
+dbx-smith dash
+```
+* **Provision**: Press `+` or `=` to launch the smart creation wizard (choose a strategy, name, image, and optional alias).
+* **Connect**: Move the cursor with `↑` / `↓` and press `Enter` to instantly jump inside the selected sandbox.
+* **Stop / Delete**: Press `s` to stop a running box, or `r` to delete it.
+* **Quit**: Press `q` or `Esc` to return to your host shell.
 
+### 4. Provision via CLI
+If you prefer standard terminal scripting, you can provision containers directly from the CLI. Let's create an Alpine container named `devbox` under the `standard` strategy, and set up a host-level shortcut alias named `dev`:
+```bash
+dbx-smith-spin standard devbox docker.io/library/alpine:latest dev
+```
+
+### 5. Enter the Sandbox (CLI or Shortcut)
+You can enter your container using the standard DbxSmith runtime command:
 ```bash
 dbx-smith devbox
 ```
-
-### 4. Tear it down
-
+Or, because we specified `dev` as a host-level shortcut alias during the spin step, you can connect instantly by typing your custom shortcut directly on the host:
 ```bash
-dbx-smith-rm --purge devbox my-other-box
+dev
+```
+
+### 6. Atomic Purge and Teardown
+When you are done with the sandbox, tear down the container along with its isolated home directories, network bridges, aliases, and registry records in a single clean sweep:
+```bash
+dbx-smith-rm devbox --purge
 ```
 
 ## Visual Showcase
