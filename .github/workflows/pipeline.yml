@@ -12,20 +12,16 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  ci:
-    name: Continuous Integration
-    # Skip branch-push CI if we are also triggering via tag push to avoid duplicates
-    if: |
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
-      (github.event_name == 'push' && github.ref_name == 'main' && !contains(github.event.head_commit.message, '[skip branch ci]'))
+  detect:
+    name: Detect Changes
     runs-on: ubuntu-latest
     outputs:
       docs: ${{ steps.filter.outputs.docs }}
+      code: ${{ steps.filter.outputs.code }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check for Documentation Changes
+      - name: Check for Changes
         uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -36,6 +32,34 @@ jobs:
               - 'CONTRIBUTING.md'
               - 'RELEASING.md'
               - 'package.json'
+              - '.github/workflows/**'
+            code:
+              - 'bin/**'
+              - 'src/**'
+              - 'tests/**'
+              - 'test.sh'
+              - 'Makefile'
+              - 'install.sh'
+
+  ci:
+    name: Continuous Integration
+    needs: detect
+    # Run integration tests if:
+    # 1. It is a pull request.
+    # 2. It is a tag push.
+    # 3. It is a main push that contains changes to non-documentation code.
+    if: |
+      github.event_name == 'pull_request' ||
+      startsWith(github.ref, 'refs/tags/v') ||
+      (
+        github.event_name == 'push' && 
+        github.ref_name == 'main' && 
+        needs.detect.outputs.code == 'true' && 
+        !contains(github.event.head_commit.message, '[skip branch ci]')
+      )
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       
       - name: Run ShellCheck
         uses: ludeeus/action-shellcheck@master
@@ -74,7 +98,6 @@ jobs:
         with:
           node-version: 'lts/*'
       
-      
       - name: Create Production Bundle
         run: |
           VERSION=$(node -e "console.log(require('./package.json').version)")
@@ -103,11 +126,24 @@ jobs:
 
   docs:
     name: Deploy Documentation
-    needs: ci
+    needs: [detect, ci]
+    # We must run this job if:
+    # 1. It is a workflow dispatch (manual trigger).
+    # 2. It is a tag push (we require CI to pass first).
+    # 3. It is a push to main and docs changes are detected (we skip CI if code changes are false).
     if: |
-      github.event_name == 'workflow_dispatch' ||
-      startsWith(github.ref, 'refs/tags/v') ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci.outputs.docs == 'true')
+      always() &&
+      needs.detect.result == 'success' &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (startsWith(github.ref, 'refs/tags/v') && needs.ci.result == 'success') ||
+        (
+          github.event_name == 'push' && 
+          github.ref == 'refs/heads/main' && 
+          needs.detect.outputs.docs == 'true' && 
+          (needs.ci.result == 'success' || needs.ci.result == 'skipped')
+        )
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: write

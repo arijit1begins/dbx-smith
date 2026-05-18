@@ -4,123 +4,69 @@ sidebar_position: 5
 
 # Frequently Asked Questions (FAQ)
 
-This section covers everything from getting started with DbxSmith to deep architectural questions and edge cases regarding how we isolate your environments.
+This section covers general usage questions, troubleshooting tips, and high-level isolation mechanics. For low-level system designs, see our [Engineering Deep-Dive](#security--isolation-mechanics) links.
+
+---
 
 ## General Questions
 
 ### What is DbxSmith, and why do I need it over vanilla Distrobox?
-Out of the box, Distrobox creates containers that share your host's home directory and network. While convenient, this carries real risk: a malicious script inside the container can delete your host files (`~/.ssh`, source code, etc.) or scan your local network. 
-DbxSmith adds a **Strategic Provisioning Layer** on top. It gives you true filesystem isolation, dedicated network bridges, visual terminal identity, and a stateful registry to securely manage your development sandboxes.
+Vanilla Distrobox creates containers that share your host's home directory and network by default, exposing your private host files (`~/.ssh`, source code, history) to potential malware or script errors. DbxSmith adds a **Strategic Provisioning Layer** that automatically injects filesystem over-mounting, custom NAT bridges, deterministic terminal background colors, and stateful registry management.
 
 ### Which strategy should I choose?
-- Use **`standard`** for your daily driver where you *want* full access to your host's files and network (e.g., normal Node.js/Python development).
-- Use **`airgapped`** if you are testing untrusted scripts, malware, or managing private keys and need a guarantee of zero internet access.
-- Use **`isolated-net`** if you are building microservices and need a dedicated local IP or want to avoid port clashing with host services.
-- Use **`ghost`** (or its hybrid variants) if you need to test permission-sensitive installers and need a completely clean-slate, ephemeral user identity.
+* Use **`standard`** for daily drivers where you need access to host files and the host network (e.g., standard Python/Node development).
+* Use **`airgapped`** if you are testing untrusted scripts or managing sensitive private keys and need a physical guarantee of zero internet.
+* Use **`isolated-net`** to run networked microservices without port conflicts.
+* Use **`ghost`** or its hybrid variants when you want identity obfuscation (runs as a transient `ghostuser`).
+
+For a detailed side-by-side strategy table, see [Isolation Strategies](./strategies.md).
 
 ### Does DbxSmith work on macOS or Windows?
-**No.** DbxSmith is built exclusively for the Linux ecosystem. It relies heavily on low-level Linux kernel features (namespaces, cgroups) exposed by Podman and Distrobox. While you *can* run DbxSmith inside a Linux VM on macOS or Windows, native host-integration features will be limited strictly to the VM environment.
+**No.** DbxSmith is built exclusively for the Linux ecosystem. It relies on namespaces and cgroup features exposed natively by Podman and Distrobox on Linux.
 
-### I accidentally deleted my box using `distrobox rm` instead of `dbx-smith-rm`. Is that bad?
-It is not catastrophic, but it leaves "orphaned" artifacts on your system. DbxSmith creates isolated home directories, network bridges, shell aliases, and registry manifests. `distrobox rm` only deletes the container itself. 
-To clean up the remaining artifacts, simply run `dbx-smith-rm <box_name>`—the destructor is smart enough to clean up the missing pieces even if the container is already gone!
+### What happens if I delete a box using vanilla `distrobox rm` instead of `dbx-smith-rm`?
+It is safe for your host, but it leaves orphaned files behind (such as custom home paths, registry manifests, network bridges, and shell shortcut fragments). To clean these up, simply run `dbx-smith-rm <box_name>`—our destructor is smart enough to find and sweep up orphaned resources even if the container is already gone.
 
 ### Why do my terminal background colors change when I enter a box?
-This is a security and productivity feature called **Visual Determinism**. DbxSmith generates a specific, permanent background color based on the hash of the container image you used. This ensures you always have a visual cue that you are inside a container, preventing you from accidentally running destructive commands on your host system.
+This is a core security feature called **Visual Determinism**. DbxSmith hashes the container's base image name to derive a permanent, unique background color (via OSC 11 sequences). This provides a constant visual warning so you never run destructive command scripts in the wrong terminal window.
 
 ---
 
 ## Troubleshooting & Common Quirks
 
 ### I cleared my terminal, but the background color didn't reset. How does color persistence work?
-Initially, terminal background colors were set using a one-time OSC 11 command. However, commands like `clear` or `reset` would strip the color. DbxSmith now permanently embeds the OSC 11 escape sequence directly into your shell's `PS1` (Bash) or `PROMPT` (Zsh). This guarantees that the background is forcefully repainted on every single command prompt.
+DbxSmith embeds the OSC 11 escape code directly inside your shell's `PS1` (Bash) or `PROMPT` (Zsh) inside the container. This forces the terminal to repaint the color on every command prompt, preventing it from being stripped by `clear` or `reset`. Sourcing the host runtime wrapper ensures the default terminal theme is automatically restored the instant you run `exit`.
 
-### Why do I see gibberish like `\033]11;...` printed in my prompt instead of colors?
-If you see literal escape codes, it means your shell is refusing to evaluate raw octal ANSI sequences. 
-DbxSmith uses **ANSI C Quoting** (`$'\e...'`) for Zsh prompts to force the shell to translate `\e` into the true, unprintable "Escape" byte *before* the variable is exported. If you encounter this, ensure your host is running a modern version of Zsh/Bash and that you have fully sourced `~/.config/dbx-smith/dbx-smith.sh`.
+### Why do I see raw text like `\033]11;...` printed inside my prompt?
+This occurs if your active host terminal or shell config fails to translate raw octal escape sequences. DbxSmith solves this by utilizing **ANSI C Quoting** (`$'\e...'`). Ensure you are using a modern terminal (like Kitty, Alacritty, or XFCE Terminal) and have sourced `~/.config/dbx-smith/dbx-smith.sh` on your host.
 
-### Why didn't Zsh show the "New User Configuration Wizard" when I created a Ghost box?
-When a new Linux user (like `ghostuser`) logs into Zsh for the first time without a `~/.zshrc` file, Zsh halts and displays a massive interactive configuration wizard, freezing automated pipelines. 
-DbxSmith bypasses this by automatically bootstrapping empty `.zshrc` and `.bashrc` files and `chown`ing them to `ghostuser` during the `init-hooks` phase, guaranteeing a frictionless entry.
+### Why didn't Zsh show the "New User Configuration Wizard" inside my Ghost box?
+Normally, entering a clean Zsh shell without a `.zshrc` triggers Zsh's interactive setup wizard, freezing headless CI scripts. DbxSmith avoids this by automatically creating and pre-configuring empty `.zshrc` and `.bashrc` files inside the guest's home directory during the provisioning phase.
 
-### Why does the creation output tell me to run `dbx-smith <name>` instead of `distrobox enter`?
-While Distrobox is the underlying engine, running `distrobox enter` directly bypasses the DbxSmith strategy layer. 
-The `dbx-smith` command reads the stateful registry (`~/.config/dbx-smith/registry/`) to determine *how* to enter the box. For example, if you provisioned a `ghost` box, running `dbx-smith` automatically injects the `--user ghostuser` and `--workdir /home/ghostuser` flags so you enter securely and bypass potential OCI runtime `chdir` errors when true `tmpfs` isolation is active. Bypassing the wrapper means you lose identity obfuscation, working directory correction, and automatic terminal color resets.
+### Why should I enter via `dbx-smith <name>` instead of `distrobox enter`?
+Running `distrobox enter` bypasses the DbxSmith registry wrapper. The `dbx-smith` command reads the registry state to automatically inject critical strategy flags (like `--user ghostuser --workdir /home/ghostuser` for Ghost boxes) and manages terminal background color states on exit.
 
 ---
 
-## Isolation & Filesystem Mechanics
+## Security & Isolation Mechanics
 
 ### Where does the `tmpfs` RAM disk live? Does it affect my host?
+The `tmpfs` RAM disk lives strictly inside the container's isolated mount namespace. It is backed entirely by your system memory and leaves absolutely no physical artifacts on your host system.
 
-The `tmpfs` RAM disk is created **entirely inside the container's isolated mount namespace**. 
-When you spin a box, DbxSmith injects `mount -t tmpfs tmpfs /home` as an `init-hook` that runs right before the container starts. This places a RAM disk over the `/home` directory *from the perspective of the container*. Your actual host system remains completely untouched and safe. We are simply putting a "blindfold" over the container's eyes so it cannot see the host's files that Distrobox mapped into it.
+### How do you over-mount `/home` without crashing Distrobox?
+Distrobox crashes if its mapped volume paths are unmounted. DbxSmith bypasses this using a Linux systems trick called **Over-mounting (The Eclipse Hack)**. By mounting a `tmpfs` RAM disk directly *on top* of the `/home` directory inside the container, we eclipse host visibility perfectly without disturbing Distrobox's initialization hooks. 
 
-### Distrobox hardcodes the host's `/home` mount. How do you remove it without crashing Distrobox?
+For the complete technical breakdown, step-by-step shell commands, and sequence diagrams of the Eclipse Hack, see [Engineering Internals: True Tmpfs Home Isolation](./Engineering/internals.md#4-true-tmpfs-home-isolation-the-eclipse-hack).
 
-**We don't remove it; we "eclipse" it.**
-Distrobox relies heavily on the `/home` path existing during its internal bootstrapping. Forcibly running `umount /home` inside an init-hook usually results in permissions errors or container crashes. 
+### Does `tmpfs` have performance benefits?
+**Yes.** Because RAM-backed filesystems bypass disk I/O, file read/writes inside RAM run at memory speed, which is extremely beneficial for compilation caches and temporary tests. It also reduces wear on physical SSDs.
 
-Instead, we use a Linux concept called **Over-mounting**. When you mount an empty `tmpfs` RAM disk directly *on top* of `/home`, the host's files still technically exist underneath, but they become 100% inaccessible to any user or process inside the container. We bypass the hardcoded volume mapping perfectly without fighting the container's lifecycle.
+### If `/home` is in RAM, where do my persistent files go?
+* **Persistent Strategies (`airgapped`, `isolated-net`)**: After eclipsing the home mount with RAM, DbxSmith bind-mounts your dedicated host-backed folder (`~/boxes/<name>`) back into the empty space. Your code persists on disk, but host dotfiles (like `~/.ssh`) remain hidden.
+* **Ephemeral Hybrid Strategies (`ghost-airgapped`, `ghost-isolated-net`)**: The user's home lives entirely in RAM. All files are destroyed the moment the box is stopped, leaving zero trace on the host.
 
-### Does `tmpfs` have any performance benefits?
+### Why do you modify `/etc/shadow` inside Ghost boxes?
+Inside unprivileged user namespaces, unmapped UIDs (like `ghostuser`) suffer severe capability drops, preventing `pam_unix.so` from reading the guest's `/etc/shadow` file. DbxSmith automatically manages permission offsets (`chmod 644 /etc/shadow`) inside the container during bootstrapping to unblock passwordless `sudo` safely. For details, see [Shell Configuration: Ghost Identity Engine](./Engineering/shell_configuration.md#iv-the-ghost-identity-engine).
 
-**Yes! Massive benefits for ephemeral testing.**
-Because `tmpfs` is a RAM-backed filesystem, read/write operations inside it are blazingly fast compared to standard physical disk I/O. 
-For **Ghost Hybrid** strategies, the entire `/home/ghostuser` directory lives exclusively in RAM. This means any caches, temporary files, or configurations written by tools during your testing session happen at RAM speed, cause zero wear to your physical SSD, and are instantly cleaned up the moment the container halts.
-
-### If `/home` is in RAM, where does my code go? Do you still create `~/boxes/<name>`?
-
-It depends entirely on the strategy you choose:
-
-- **Persistent Strategies (`airgapped`, `isolated-net`)**: **Yes**. These are designed for real development. After eclipsing `/home` with RAM, DbxSmith explicitly binds `~/boxes/<name>` (which is on your physical disk) *back* into the RAM disk. Your project files survive reboots, but the host's `~/.ssh` and `.bash_history` remain securely hidden in the RAM void.
-- **Ephemeral Strategies (`ghost-airgapped`, `ghost-isolated-net`)**: **No**. The `ghostuser` is designed to leave zero trace on the host. Everything happens inside the `tmpfs` RAM disk. When the box stops, the RAM evaporates and your host's filesystem is completely unaffected.
-
-## Terminal & UI Behaviors
-
-### Why did you have to use ANSI C Quoting (`$'\e'`) for Zsh Prompts?
-
-If you try to embed the literal string `\033` (the octal escape code for ASCII ESC) into a Zsh `PROMPT` using standard double quotes (`""`), Zsh will literally print the text `\033` instead of rendering a color. Bash (`PS1`), on the other hand, understands `\033` naturally. 
-
-To achieve cross-shell theme integrity, DbxSmith uses **ANSI C Quoting** (`$'\e...'`). This forces both Zsh and Bash to translate the `\e` into the true, unprintable "Escape" byte *before* the variable is exported into the container's `/etc/profile.d/dbx-smith-env.sh`, ensuring it renders flawlessly on every startup.
-
-### The default Zsh prompt ends with `%`, but DbxSmith ends with `$`. Why?
-
-You might notice that natively, a normal user's Zsh prompt ends with `%` (e.g., `user@host%`), while Bash ends with `$`. However, many users (especially those coming from Kali Linux or long-time Bash users) prefer the familiar `$`. 
-
-Because DbxSmith isolated containers do not load your host's customized `~/.zshrc`, the container's Zsh defaults to `%`. To provide a seamless and familiar experience, DbxSmith injects `%(!.#.$)` into the Zsh `PROMPT`. This dynamic marker tells Zsh to print `#` if you escalate to root, and `$` for a normal user, standardizing the aesthetic across all your boxes.
-
-## Lifecycle Management
-
-### Can I delete multiple boxes at once?
-
-**Yes.** The `dbx-smith-rm` tool supports atomic bulk deletion. You can pass as many box names as you like:
-```bash
-dbx-smith-rm box1 box2 box3 --purge
-```
-Because DbxSmith parses the stateful registry located at `~/.config/dbx-smith/registry/`, it knows exactly what networks, alias fragments, and isolated home directories belong to each box, ensuring it completely wipes every trace of the targets securely in a single pass.
-
-## Compatibility & Multi-Distro Execution
-
-### Which distributions does DbxSmith actually support?
-DbxSmith is rigorously tested via an automated multi-distribution matrix. We guarantee **100% stability** across all six isolation strategies (`standard`, `airgapped`, `ghost`, etc.) for the following guest OS images:
-- **Alpine Linux**
-- **Arch Linux**
-- **Fedora**
-- **Ubuntu**
-
-If a container image operates via `sh`, `bash`, `ash`, or `zsh`, DbxSmith can provision and isolate it flawlessly.
-
-### I wrote a custom multiline shell hook, but the container failed to bootstrap with a "mount: bad usage" error. Why?
-If you are developing custom strategies or writing your own `init-hooks`, **do not use escaped newlines (`\`) to format multi-line commands**. 
-
-Strict POSIX shell interpreters built into base images like **Arch Linux** evaluate escaped newlines literally during OCI engine bootstrap loops (`eval`). This causes the trailing backslash to be passed down as an invalid physical option flag to binaries like `mount`, fatally aborting the container's creation. 
-
-To ensure cross-distro resilience, **flatten all your payload scripts into continuous, single-line strings** before passing them into the `--init-hooks` argument.
-
-### Why does DbxSmith modify `/etc/shadow` permissions when creating a Ghost identity?
-When running inside unprivileged rootless namespaces (`--userns=keep-id`), secondary UIDs (like our `ghostuser` mapping) experience severe capability drops. 
-
-On strict distributions like **Fedora**, the `/etc/shadow` file defaults to `0000` permissions (`----------`). Because `ghostuser` lacks the `CAP_DAC_OVERRIDE` Linux capability inside the unprivileged namespace, `pam_unix.so` fails to read the shadow file, breaking passwordless `sudo`. 
-
-By explicitly managing internal sandbox permissions (`chmod 644 /etc/shadow`) dynamically during bootstrap, DbxSmith allows `pam_unix.so` to authenticate unmapped users natively without requiring unsafe root escalation or host modifications.
+### Why did my custom multiline hook crash the container during spin?
+POSIX interpreters inside base container images (like Arch or Alpine) evaluate escaped newlines literally during creation loop evaluations. To prevent bad mount errors, you must flatten all custom payload scripts into continuous, single-line strings. For details, see [Engineering Internals: Base64 Tunnelling](./Engineering/internals.md#1-zero-escape-payload-injection-base64-tunnelling).

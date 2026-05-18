@@ -123,7 +123,7 @@ const config: Config = {
             },
             {
               label: 'Architecture',
-              to: '/docs/engineering/architecture',
+              to: '/docs/Engineering/architecture',
             },
             {
               label: 'Strategies',

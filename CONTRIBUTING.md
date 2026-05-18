@@ -79,17 +79,33 @@ We use **Semantic Release**. Please follow the [Conventional Commits](https://ww
 ## DevOps & Release Engineering
 
 ### Unified Pipeline
-Our CI/CD orchestration is consolidated into `.github/workflows/pipeline.yml`, ensuring a streamlined and predictable release flow:
+Our CI/CD orchestration is consolidated into [.github/workflows/pipeline.yml](file:///home/antler/my_utils/dbx-smith/.github/workflows/pipeline.yml), ensuring a streamlined, fast, and predictable release flow:
+
+- **Detect Job (Detect Changes)**: Path filtering that determines whether only documentation was modified, or if core application code changes are present.
 - **CI Job (Continuous Integration)**: 
   - Runs **ShellCheck** on all binaries and core scripts.
   - Executes **`./test.sh --full`**, validating all isolation strategies across a matrix of containers.
-  - **Conditional Logic**: Skips the branch push if the commit message contains `[skip branch ci]`. This avoids redundant runs when a Tag is pushed simultaneously.
+  - **Highly Optimized**: On ad-hoc documentation-only commits, the slow strategy test steps are skipped entirely, saving valuable runner minutes!
+  - **Surgical Skip**: Skips the branch push if the commit message contains `[skip branch ci]`. This avoids redundant runs when a Tag is pushed simultaneously.
   - Triggered on PRs, Tags, and non-release pushes to `main`.
 - **Release Job (GitHub Release)**:
   - Triggered **ONLY** on pushed Git tags (e.g., `v1.2.3`).
   - Uses `softprops/action-gh-release` to generate professional release notes and upload production bundles/assets.
 - **Docs Job (Documentation)**:
-  - Runs after a successful release to build and deploy the Docusaurus site to GitHub Pages.
+  - Fully synchronous. It builds and deploys the Docusaurus site to GitHub Pages. It runs after a successful tag release, or immediately on doc-only commits, but is strictly skipped if code tests fail (preventing publishing docs for broken code).
+
+#### Pipeline Decision & Execution Matrix
+The pipeline dynamically adjusts its execution path based on the type of files modified, maximizing speed while maintaining strict release stability:
+
+| Commit / Trigger Type | Path Outputs | `ci` Job Status | `docs` Deployment | Deployment Mode | Why? |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Doc-Only Push** (to `main`) | `docs: true`, `code: false` | **Skipped** | **Deploys immediately** | Fast Path (~2 mins) | Only documentation was modified. Bypasses container testing. |
+| **Code-Only Push** (to `main`) | `docs: false`, `code: true` | **Runs** | **Skipped** | No Deploy | Only code changed. No new doc updates to publish. |
+| **Code & Docs Push (CI Passes)** | `docs: true`, `code: true` | **Runs** | **Deploys** | Synchronous | Code is stable and documentation is updated sequentially. |
+| **Code & Docs Push (CI Fails)** | `docs: true`, `code: true` | **Runs** | **Blocked & Skipped** | Blocked | **Safety Guard**: Prevents publishing docs for broken code. |
+| **Workflow-Only Push** (to `main`) | `docs: true`, `code: false` | **Skipped** | **Deploys immediately** | Fast Path (~2 mins) | Verifies pipeline execution and doc build instantly. |
+| **Pull Request** (to `main`) | Variable | **Runs** (if `code: true`) | **Skipped** | PR Validation | Validates code stability. Deploys only occur on merge/tag. |
+| **Git Tag Push** (`v*.*.*`) | N/A (Tag trigger) | **Runs** | **Deploys** | Release Deploy | Builds and publishes production bundle and matching docs. |
 
 ### Local-First Release Strategy
 We follow a **Local-First, Tag-Driven Release Strategy**. GitHub Actions **NEVER** commits back to the repository. All versioning and changelog updates are managed by the author locally.
