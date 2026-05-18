@@ -43,14 +43,7 @@ curl -fsSL https://raw.githubusercontent.com/arijit1begins/dbx-smith/main/instal
 make install
 ```
 
-### 2. Sourcing the Runtime
-After installation completes, append the runtime configuration to your shell profile to enable the automatic identity engine:
-```bash
-# Add to ~/.bashrc or ~/.zshrc as prompted on-screen
-source ~/.dbx-smith/runtime.sh
-```
-
-### 3. Launching Mission Control
+### 2. Launching Mission Control
 Forge and manage your containers instantly:
 ```bash
 dbx-smith dash
