@@ -11,7 +11,7 @@
 
 
 <script async="true" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script><link rel="stylesheet" href="/dbx-smith/assets/css/styles.083eda30.css">
-<script src="/dbx-smith/assets/js/runtime~main.e3103e11.js" defer="defer"></script>
+<script src="/dbx-smith/assets/js/runtime~main.db0d1e64.js" defer="defer"></script>
 <script src="/dbx-smith/assets/js/main.a15b9e3e.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -56,7 +56,7 @@ DbxSmith automatically <code>touch</code>es empty <code>.zshrc</code> and <code>
 <li><strong>Identity Creation</strong>: Moved to a post-bootstrap <code>podman exec</code> phase. Checks for <code>ghostuser</code> existence; if missing, runs <code>useradd -m ghostuser</code> and normalizes sudo ownership across <code>/etc/sudoers.d</code> to bypass user namespace limitations.</li>
 <li><strong>Privilege Escalation</strong>: Automatically adds <code>ghostuser</code> to both <code>sudo</code> (Debian/Ubuntu) and <code>wheel</code> (Fedora/RHEL/Alpine) groups. DbxSmith also injects a <code>NOPASSWD</code> entry into <code>/etc/sudoers.d/dbx-smith-ghost</code> to allow frictionless administration inside the sandbox.</li>
 <li><strong>Home Visibility</strong>: Distrobox typically mounts the host home directory for compatibility. However, because the <code>ghostuser</code> UID (1001) differs from the host UID (1000), access to <code>/home/&lt;host_user&gt;</code> is denied by the Linux kernel, achieving &quot;identity-based&quot; isolation.</li>
-<li><strong>Runtime Mapping</strong>: The host <code>dbx-smith</code> command detects the <code>ghost</code> strategy from the registry and automatically appends <code>--additional-flags &quot;--user ghostuser --workdir /home/ghostuser&quot;</code> to the <code>distrobox enter</code> command.</li>
+<li><strong>Runtime Mapping</strong>: The host <code>dbx-smith</code> command detects any <code>ghost*</code> strategy from the registry and automatically appends <code>--additional-flags &quot;--user ghostuser --workdir /home/ghostuser&quot;</code> to the <code>distrobox enter</code> command.</li>
 </ol>
 <hr>
 <h2 class="anchor anchorWithStickyNavbar_LWe7" id="v-technical-breakdown-by-distro-family">V. Technical Breakdown by Distro Family<a href="#v-technical-breakdown-by-distro-family" class="hash-link" aria-label="Direct link to V. Technical Breakdown by Distro Family" title="Direct link to V. Technical Breakdown by Distro Family">​</a></h2>

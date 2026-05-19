@@ -11,7 +11,7 @@
 
 
 <script async="true" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script><link rel="stylesheet" href="/dbx-smith/assets/css/styles.083eda30.css">
-<script src="/dbx-smith/assets/js/runtime~main.e3103e11.js" defer="defer"></script>
+<script src="/dbx-smith/assets/js/runtime~main.db0d1e64.js" defer="defer"></script>
 <script src="/dbx-smith/assets/js/main.a15b9e3e.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -47,7 +47,7 @@
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="why-didnt-zsh-show-the-new-user-configuration-wizard-inside-my-ghost-box">Why didn&#x27;t Zsh show the &quot;New User Configuration Wizard&quot; inside my Ghost box?<a href="#why-didnt-zsh-show-the-new-user-configuration-wizard-inside-my-ghost-box" class="hash-link" aria-label="Direct link to Why didn&#x27;t Zsh show the &quot;New User Configuration Wizard&quot; inside my Ghost box?" title="Direct link to Why didn&#x27;t Zsh show the &quot;New User Configuration Wizard&quot; inside my Ghost box?">​</a></h3>
 <p>Normally, entering a clean Zsh shell without a <code>.zshrc</code> triggers Zsh&#x27;s interactive setup wizard, freezing headless CI scripts. DbxSmith avoids this by automatically creating and pre-configuring empty <code>.zshrc</code> and <code>.bashrc</code> files inside the guest&#x27;s home directory during the provisioning phase.</p>
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="why-should-i-enter-via-dbx-smith-name-instead-of-distrobox-enter">Why should I enter via <code>dbx-smith &lt;name&gt;</code> instead of <code>distrobox enter</code>?<a href="#why-should-i-enter-via-dbx-smith-name-instead-of-distrobox-enter" class="hash-link" aria-label="Direct link to why-should-i-enter-via-dbx-smith-name-instead-of-distrobox-enter" title="Direct link to why-should-i-enter-via-dbx-smith-name-instead-of-distrobox-enter">​</a></h3>
-<p>Running <code>distrobox enter</code> bypasses the DbxSmith registry wrapper. The <code>dbx-smith</code> command reads the registry state to automatically inject critical strategy flags (like <code>--user ghostuser --workdir /home/ghostuser</code> for Ghost boxes) and manages terminal background color states on exit.</p>
+<p>Running <code>distrobox enter</code> bypasses the DbxSmith registry wrapper. The <code>dbx-smith</code> command reads the registry state to automatically inject critical strategy flags (like <code>--user ghostuser --workdir /home/ghostuser</code> for ghost-identity boxes) and manages terminal background color states on exit.</p>
 <hr>
 <h2 class="anchor anchorWithStickyNavbar_LWe7" id="security--isolation-mechanics">Security &amp; Isolation Mechanics<a href="#security--isolation-mechanics" class="hash-link" aria-label="Direct link to Security &amp; Isolation Mechanics" title="Direct link to Security &amp; Isolation Mechanics">​</a></h2>
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="where-does-the-tmpfs-ram-disk-live-does-it-affect-my-host">Where does the <code>tmpfs</code> RAM disk live? Does it affect my host?<a href="#where-does-the-tmpfs-ram-disk-live-does-it-affect-my-host" class="hash-link" aria-label="Direct link to where-does-the-tmpfs-ram-disk-live-does-it-affect-my-host" title="Direct link to where-does-the-tmpfs-ram-disk-live-does-it-affect-my-host">​</a></h3>
