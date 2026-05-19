@@ -20,11 +20,28 @@ jobs:
       code: ${{ steps.filter.outputs.code }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine Base Ref
+        id: base-ref
+        run: |
+          if [[ "${{ github.ref }}" =~ ^refs/tags/v ]]; then
+            PREVIOUS_TAG=$(git tag --sort=-v:refname | sed -n '2p')
+            if [ -n "$PREVIOUS_TAG" ]; then
+              echo "base=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+            else
+              echo "base=$(git rev-list --max-parents=0 HEAD)" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "base=" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check for Changes
         uses: dorny/paths-filter@v3
         id: filter
         with:
+          base: ${{ steps.base-ref.outputs.base }}
           filters: |
             docs:
               - 'docs/**'
@@ -166,6 +183,7 @@ jobs:
           github.event_name == 'push' && 
           github.ref == 'refs/heads/main' && 
           needs.detect.outputs.docs == 'true' && 
+          !contains(github.event.head_commit.message, '[skip branch ci]') &&
           (needs.ci.result == 'success' || needs.ci.result == 'skipped')
         )
       )
