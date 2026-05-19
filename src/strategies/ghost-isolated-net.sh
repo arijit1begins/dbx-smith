@@ -30,7 +30,7 @@ strategy_ghost_isolated_net_finalize() {
 
     echo "Ghost-isolated-net strategy detected. Bootstrapping container..."
     if [[ "${SKIP_BOOTSTRAP:-false}" != "true" ]]; then
-        distrobox enter --no-workdir "$name" -- true </dev/null || true
+        distrobox enter --no-workdir --additional-flags "--workdir /" "$name" -- true </dev/null || true
     else
         echo "[SKIP_BOOTSTRAP] Skipping distrobox first-entry bootstrap. Starting container directly..."
         podman start "$name" >/dev/null 2>&1 || true

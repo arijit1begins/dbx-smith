@@ -21,10 +21,11 @@ mkdir -p /etc/profile.d
 cat << 'INNER_EOF' > /etc/profile.d/dbx-smith-env.sh
 # DbxSmith Shell Theme — uses hooks to persist after user rc files
 if [ -n "\${ZSH_VERSION:-}" ]; then
+    eval '
     _dbx_smith_precmd() {
-        printf '\e]11;${color}\a'
+        printf "\e]11;${color}\a"
         if [[ "\$PROMPT" != *"(REPLACE_NAME)"* ]]; then
-            PROMPT=\$'%F{cyan}(REPLACE_NAME)%f %n@%m:%~ %(!.#.\$) '
+            PROMPT=\$'\''%F{cyan}(REPLACE_NAME)%f %n@%m:%~ %(!.#.\$) '\''
         fi
     }
     typeset -aU precmd_functions
@@ -34,7 +35,8 @@ if [ -n "\${ZSH_VERSION:-}" ]; then
         precmd_functions=(\${precmd_functions:#_dbx_smith_pin_last})
     }
     precmd_functions+=(_dbx_smith_pin_last)
-else
+    '
+elif [ -n "\${BASH_VERSION:-}" ]; then
     _dbx_smith_prompt() {
         printf '\033]11;${color}\007'
         if [[ "\$PS1" != *"(REPLACE_NAME)"* ]]; then
@@ -42,6 +44,14 @@ else
         fi
     }
     PROMPT_COMMAND="\${PROMPT_COMMAND:+\$PROMPT_COMMAND;}_dbx_smith_prompt"
+else
+    case "\$PS1" in
+        *"(REPLACE_NAME)"*) ;;
+        *)
+            printf '\033]11;${color}\007'
+            PS1="(REPLACE_NAME) \$PS1"
+            ;;
+    esac
 fi
 INNER_EOF
 

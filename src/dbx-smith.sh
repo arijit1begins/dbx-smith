@@ -73,7 +73,7 @@ dbx-smith() {
         strategy=$(grep "^STRATEGY=" "$REG_DIR/${box}.conf" | cut -d= -f2)
         if [[ "$strategy" == ghost* ]]; then
             is_ghost=true
-            enter_args+=(--no-workdir --additional-flags "--workdir /home/ghostuser")
+            enter_args+=(--no-workdir --additional-flags "--workdir /home/ghostuser --env HOME=/home/ghostuser")
         elif [[ "$strategy" == "airgapped" || "$strategy" == "isolated-net" ]]; then
             enter_args+=(--no-workdir)
         fi

@@ -55,8 +55,8 @@ strategy_ghost_airgapped_finalize() {
     local pkg_name="iproute2"
     [[ "$image" == *fedora* ]] && pkg_name="iproute"
     
-    distrobox enter --no-workdir "$name" -- bash -c "sudo $DISTRO_PKGMGR update >/dev/null 2>&1 || true; sudo $DISTRO_PKGMGR install -y $pkg_name >/dev/null 2>&1 || true" </dev/null
-    distrobox enter --no-workdir "$name" -- true </dev/null || true
+    distrobox enter --no-workdir --additional-flags "--workdir /" "$name" -- bash -c "sudo $DISTRO_PKGMGR update >/dev/null 2>&1 || true; sudo $DISTRO_PKGMGR install -y $pkg_name >/dev/null 2>&1 || true" </dev/null
+    distrobox enter --no-workdir --additional-flags "--workdir /" "$name" -- true </dev/null || true
 
     _create_ghostuser "$name"
 

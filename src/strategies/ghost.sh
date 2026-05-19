@@ -17,7 +17,11 @@ _create_ghostuser() {
         fi
         
         mkdir -p /home/ghostuser
-        touch /home/ghostuser/.zshrc /home/ghostuser/.bashrc
+        echo "export HOME=/home/ghostuser" > /home/ghostuser/.profile
+        echo "export HOME=/home/ghostuser" > /home/ghostuser/.bashrc
+        echo "export HOME=/home/ghostuser" > /home/ghostuser/.zshrc
+        mkdir -p /etc/profile.d
+        echo "if [ \"\$(id -un)\" = \"ghostuser\" ]; then export HOME=/home/ghostuser; fi" > /etc/profile.d/dbx-smith-ghost.sh
         chown -R ghostuser:ghostuser /home/ghostuser 2>/dev/null || chown -R 2999:2999 /home/ghostuser
         
         usermod -aG wheel ghostuser 2>/dev/null || true

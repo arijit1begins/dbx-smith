@@ -20,11 +20,11 @@ mkdir -p "$TARGET_DIR/etc/profile.d"
 cat << 'INNER_EOF' > "$TARGET_DIR/etc/profile.d/dbx-smith-env.sh"
 # DbxSmith Shell Theme — uses hooks to persist after user rc files
 if [ -n "${ZSH_VERSION:-}" ]; then
-    # --- Zsh: precmd hook ---
+    eval '
     _dbx_smith_precmd() {
-        printf '\e]11;REPLACE_COLOR\a'
+        printf "\e]11;REPLACE_COLOR\a"
         if [[ "$PROMPT" != *"(REPLACE_NAME)"* ]]; then
-            PROMPT=\$'%F{cyan}(REPLACE_NAME)%f %n@%m:%~ %(!.#.$) '
+            PROMPT=$'\''%F{cyan}(REPLACE_NAME)%f %n@%m:%~ %(!.#.$) '\''
         fi
     }
     typeset -aU precmd_functions
@@ -34,7 +34,8 @@ if [ -n "${ZSH_VERSION:-}" ]; then
         precmd_functions=(${precmd_functions:#_dbx_smith_pin_last})
     }
     precmd_functions+=(_dbx_smith_pin_last)
-else
+    '
+elif [ -n "${BASH_VERSION:-}" ]; then
     _dbx_smith_prompt() {
         printf '\033]11;REPLACE_COLOR\007'
         if [[ "$PS1" != *"(REPLACE_NAME)"* ]]; then
@@ -42,6 +43,14 @@ else
         fi
     }
     PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND;}_dbx_smith_prompt"
+else
+    case "$PS1" in
+        *"(REPLACE_NAME)"*) ;;
+        *)
+            printf '\033]11;REPLACE_COLOR\007'
+            PS1="(REPLACE_NAME) \$PS1"
+            ;;
+    esac
 fi
 INNER_EOF
 sed -i "s|REPLACE_COLOR|${COLOR}|g" "$TARGET_DIR/etc/profile.d/dbx-smith-env.sh"
@@ -78,7 +87,7 @@ if ! grep -Fq '(testbox)' "$ENV_FILE"; then
 fi
 
 # Validation 4: Zsh precmd hook contains correct background color printf
-if ! grep -Fq "printf '\\e]11;#3a4b5c\\a'" "$ENV_FILE"; then
+if ! grep -Fq 'printf "\e]11;#3a4b5c\a"' "$ENV_FILE"; then
     echo "❌ Error: Zsh precmd hook missing OSC 11 color printf."
     exit 1
 fi
