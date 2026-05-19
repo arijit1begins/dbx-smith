@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.5](https://github.com/arijit1begins/dbx-smith/compare/v1.4.4...v1.4.5) (2026-05-19)
+
+
+### Bug Fixes
+
+* **core:** check all strategies starting with `ghost*` to correctly route hybrid ghost containers (`ghost-airgapped` and `ghost-isolated-net`) to the `ghostuser` identity.
+* **airgap:** conditionally apply OCI network isolation flags during initial container create, allowing guest package installation to succeed with temporary network access before freezing.
+* **test:** redirect stdin to `/dev/null` inside the wrapper check to prevent non-interactive TTY hangs under rootless environments, and add user identity verification to the integration test suite.
+
 ### [1.4.4](https://github.com/arijit1begins/dbx-smith/compare/v1.4.3...v1.4.4) (2026-05-18)
 
 

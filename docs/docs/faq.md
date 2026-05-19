@@ -44,7 +44,7 @@ This occurs if your active host terminal or shell config fails to translate raw 
 Normally, entering a clean Zsh shell without a `.zshrc` triggers Zsh's interactive setup wizard, freezing headless CI scripts. DbxSmith avoids this by automatically creating and pre-configuring empty `.zshrc` and `.bashrc` files inside the guest's home directory during the provisioning phase.
 
 ### Why should I enter via `dbx-smith <name>` instead of `distrobox enter`?
-Running `distrobox enter` bypasses the DbxSmith registry wrapper. The `dbx-smith` command reads the registry state to automatically inject critical strategy flags (like `--user ghostuser --workdir /home/ghostuser` for Ghost boxes) and manages terminal background color states on exit.
+Running `distrobox enter` bypasses the DbxSmith registry wrapper. The `dbx-smith` command reads the registry state to automatically inject critical strategy flags (like `--user ghostuser --workdir /home/ghostuser` for ghost-identity boxes) and manages terminal background color states on exit.
 
 ---
 

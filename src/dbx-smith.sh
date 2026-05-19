@@ -32,7 +32,10 @@ dbx-smith() {
         while true; do
             local box
             box=$(dbx-smith-dash --print-selected)
-            [[ -z "$box" ]] && { clear; return 0; }
+            if [[ -z "$box" ]]; then
+                clear
+                return 0
+            fi
             
             # Reset terminal before entering container
             tput rmcup 2>/dev/null || true
@@ -48,7 +51,10 @@ dbx-smith() {
 
     local box
     box="$1"
-    [[ -z "$box" ]] && { echo "usage: dbx-smith <box_name|list|dash> [args...]"; return 1; }
+    if [[ -z "$box" ]]; then
+        echo "usage: dbx-smith <box_name|list|dash> [args...]"
+        return 1
+    fi
 
     # Pre-flight existence validation using pipe delimiter
     if ! distrobox list --no-color | awk -F'|' -v b="$box" 'NR>1 {
@@ -61,11 +67,13 @@ dbx-smith() {
 
     # Read manifest if exists to determine strategy-specific enter flags
     local enter_args=()
+    local is_ghost=false
     if [[ -f "$REG_DIR/${box}.conf" ]]; then
         local strategy
         strategy=$(grep "^STRATEGY=" "$REG_DIR/${box}.conf" | cut -d= -f2)
         if [[ "$strategy" == ghost* ]]; then
-            enter_args+=(--no-workdir --additional-flags "--user ghostuser --workdir /home/ghostuser --env HOME=/home/ghostuser")
+            is_ghost=true
+            enter_args+=(--no-workdir --additional-flags "--workdir /home/ghostuser")
         elif [[ "$strategy" == "airgapped" || "$strategy" == "isolated-net" ]]; then
             enter_args+=(--no-workdir)
         fi
@@ -74,7 +82,24 @@ dbx-smith() {
     # Trap to ensure background reset even on SIGINT/interrupt
     trap 'if [[ -t 1 ]]; then printf "\033]111\007\033]11;#000000\007"; tput cnorm; fi' EXIT INT TERM
 
-    distrobox enter "${enter_args[@]}" "$box" "${@:2}"
+    # Disable TTY allocation for non-interactive commands run inside redirections/pipes
+    if [[ $# -gt 1 ]]; then
+        if [[ ! -t 0 || ! -t 1 ]]; then
+            enter_args+=(-T)
+        fi
+    fi
+
+    local cmd_args=()
+    if [[ $# -gt 1 ]]; then
+        cmd_args+=(--)
+        cmd_args+=("${@:2}")
+    fi
+
+    if [[ "$is_ghost" == "true" ]]; then
+        USER=ghostuser distrobox enter "${enter_args[@]}" "$box" "${cmd_args[@]}"
+    else
+        distrobox enter "${enter_args[@]}" "$box" "${cmd_args[@]}"
+    fi
     local exit_code=$?
     
     # Explicit reset after clean exit

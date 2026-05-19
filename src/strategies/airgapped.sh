@@ -22,8 +22,13 @@ strategy_airgapped_get_flags() {
     local airgap_hook
     airgap_hook=$(_get_airgap_sever_hook)
 
+    local extra_args=()
+    if [[ "${SKIP_BOOTSTRAP:-false}" == "true" ]]; then
+        extra_args+=(--unshare-all --additional-flags "--network none")
+    fi
+
     # shellcheck disable=SC2034
-    DBX_FLAGS=(--name "$name" --image "$image" --home "$HOME_BASE/$name" --unshare-all --init-hooks "$isolate_hook; $airgap_hook; $init_hook")
+    DBX_FLAGS=(--name "$name" --image "$image" --home "$HOME_BASE/$name" "${extra_args[@]}" --init-hooks "$isolate_hook; $airgap_hook; $init_hook")
 }
 
 strategy_airgapped_finalize() {

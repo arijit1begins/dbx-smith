@@ -110,30 +110,39 @@ main() {
         # Exact match validation using default whitespace tokenization
         # Force clean podman engine references immediately to avoid wrapper script timeouts
         echo "Stopping and removing container '$target'..."
-        podman stop -t 2 "$target" >/dev/null 2>&1 || true
-        podman rm -f "$target" >/dev/null 2>&1 || true
+        timeout 10 podman stop -t 2 "$target" >/dev/null 2>&1 || true
+        timeout 10 podman rm -f "$target" >/dev/null 2>&1 || true
 
-        # Cleanup filesystem
-        [[ -d "$HOME_BASE/$target" ]] && rm -rf "${HOME_BASE:?}/${target:?}" && echo "Removed isolated home directory."
-        [[ -f "$ALIAS_DIR/${target}.sh" ]] && rm -f "$ALIAS_DIR/${target}.sh" && echo "Removed alias fragment."
-        [[ -f "$REG_DIR/${target}.conf" ]] && rm -f "$REG_DIR/${target}.conf" && echo "Removed registry manifest."
+        # Cleanup filesystem using safe if blocks to prevent set -e / ERR trap aborts
+        if [[ -d "$HOME_BASE/$target" ]]; then
+            rm -rf "${HOME_BASE:?}/${target:?}"
+            echo "Removed isolated home directory."
+        fi
+        if [[ -f "$ALIAS_DIR/${target}.sh" ]]; then
+            rm -f "$ALIAS_DIR/${target}.sh"
+            echo "Removed alias fragment."
+        fi
+        if [[ -f "$REG_DIR/${target}.conf" ]]; then
+            rm -f "$REG_DIR/${target}.conf"
+            echo "Removed registry manifest."
+        fi
         
         # Clean up associated frozen images (for airgapped boxes)
         local freeze_image="dbx-frozen-${target}"
-        if podman image exists "$freeze_image" >/dev/null 2>&1; then
+        if timeout 10 podman image exists "$freeze_image" >/dev/null 2>&1; then
             echo "Removing frozen image '$freeze_image'..."
-            podman rmi "$freeze_image" >/dev/null 2>&1 || true
+            timeout 10 podman rmi "$freeze_image" >/dev/null 2>&1 || true
         fi
 
         # Clean up isolated network if it exists
-        if podman network inspect "dbx-net-${target}" >/dev/null 2>&1; then
+        if timeout 10 podman network inspect "dbx-net-${target}" >/dev/null 2>&1; then
             echo "Removing isolated network bridge..."
-            podman network rm "dbx-net-${target}" >/dev/null 2>&1 || true
+            timeout 10 podman network rm "dbx-net-${target}" >/dev/null 2>&1 || true
         fi
 
         if (( purge_volume )); then
             echo "Purging Podman volume..."
-            podman volume rm "${target}_home" 2>/dev/null || true
+            timeout 10 podman volume rm "${target}_home" >/dev/null 2>&1 || true
         fi
 
         echo "Teardown complete for '$target'."

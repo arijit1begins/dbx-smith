@@ -77,7 +77,7 @@ For strategies involving the `ghost` identity, DbxSmith performs the following s
 1.  **Identity Creation**: Moved to a post-bootstrap `podman exec` phase. Checks for `ghostuser` existence; if missing, runs `useradd -m ghostuser` and normalizes sudo ownership across `/etc/sudoers.d` to bypass user namespace limitations.
 2.  **Privilege Escalation**: Automatically adds `ghostuser` to both `sudo` (Debian/Ubuntu) and `wheel` (Fedora/RHEL/Alpine) groups. DbxSmith also injects a `NOPASSWD` entry into `/etc/sudoers.d/dbx-smith-ghost` to allow frictionless administration inside the sandbox.
 3.  **Home Visibility**: Distrobox typically mounts the host home directory for compatibility. However, because the `ghostuser` UID (1001) differs from the host UID (1000), access to `/home/<host_user>` is denied by the Linux kernel, achieving "identity-based" isolation.
-4.  **Runtime Mapping**: The host `dbx-smith` command detects the `ghost` strategy from the registry and automatically appends `--additional-flags "--user ghostuser --workdir /home/ghostuser"` to the `distrobox enter` command.
+4.  **Runtime Mapping**: The host `dbx-smith` command detects any `ghost*` strategy from the registry and automatically appends `--additional-flags "--user ghostuser --workdir /home/ghostuser"` to the `distrobox enter` command.
 
 ---
 

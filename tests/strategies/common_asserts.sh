@@ -50,9 +50,9 @@ assert_common_teardown() {
     timeout 60 dbx-smith-rm --purge "$b_name" >/dev/null 2>&1 || true
     
     # Aggressively ensure low-level podman engine references and dedicated bridges are wiped
-    podman rm -f "$b_name" >/dev/null 2>&1 || true
-    podman rmi -f "dbx-frozen-${b_name}" >/dev/null 2>&1 || true
-    podman network rm -f "dbx-net-${b_name}" >/dev/null 2>&1 || true
+    timeout 10 podman rm -f "$b_name" >/dev/null 2>&1 || true
+    timeout 10 podman rmi -f "dbx-frozen-${b_name}" >/dev/null 2>&1 || true
+    timeout 10 podman network rm -f "dbx-net-${b_name}" >/dev/null 2>&1 || true
 }
 
 # Setup global trap removed. Teardown is handled exclusively by slave_runner.sh 
@@ -131,6 +131,19 @@ assert_ghost_identity() {
     if [[ "$current_user" != "ghostuser" ]]; then
         echo "[!] ERROR: Expected 'ghostuser', but found '$current_user'!"
         exit 1
+    fi
+
+    # Assert that entering via the dbx-smith wrapper also enters as ghostuser
+    echo "[*] Validating entry user identity via dbx-smith entrypoint..."
+    if [[ -f "$CONFIG_DIR/src/dbx-smith.sh" ]]; then
+        # shellcheck disable=SC1090
+        source "$CONFIG_DIR/src/dbx-smith.sh"
+        local entry_user
+        entry_user=$(dbx-smith "$box_name" whoami </dev/null 2>/dev/null | tr -d '\r\n')
+        if [[ "$entry_user" != "ghostuser" ]]; then
+            echo "[!] ERROR: dbx-smith entry resolved to user '$entry_user', expected 'ghostuser'!"
+            exit 1
+        fi
     fi
 
     if [[ "$is_tmpfs" == "true" ]]; then

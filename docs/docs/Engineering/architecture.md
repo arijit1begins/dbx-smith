@@ -123,12 +123,12 @@ This is the core provisioning logic.
 - **Image Checksumming**: Uses `cksum` on the image name to generate a deterministic seed.
 - **Theme Generation**: Converts the checksum seed into an RGB hex color. This ensures that every time you pull `ubuntu:latest`, your boxes have a consistent, distinct background color.
 - **Isolation Logic**:
-  - For **Airgapped**, it uses a **two-phase** approach. During `distrobox create`, it uses the default internet-connected network so Distrobox's first-run package installer can succeed. Once the setup completes, DbxSmith dynamically enumerates and permanently severs all internal non-loopback interfaces using `ip link set down`. Isolation is achieved instantaneously from within the container, avoiding complex podman bridge teardowns.
+  - For **Airgapped**, it uses a **two-phase** bootstrap-freeze-rebuild cycle. The temporary bootstrap container is created with host internet access to allow first-run package managers (`pacman`, `dnf`, etc.) to download dependencies. The container is then committed/frozen, and recreation spawns the final container with physical `--network none` isolation.
 
 ### 2. `src/dbx-smith.sh` (The Pulse)
 The runtime core that lives in your shell.
 - **Dynamic Sourcing**: It doesn't just store aliases; it sources them from `~/.config/dbx-smith/aliases.d/`. This allows you to "hot-swap" environment access without restarting your shell.
-- **The Wrapper**: `dbx-smith()` function intercepts the container name and checks the registry before calling `distrobox enter`. For `ghost` boxes, it automatically appends `--user ghostuser --workdir /home/ghostuser`.
+- **The Wrapper**: `dbx-smith()` function intercepts the container name and checks the registry before calling `distrobox enter`. For any strategies starting with `ghost*` (including `ghost`, `ghost-airgapped`, and `ghost-isolated-net`), it automatically appends `--user ghostuser --workdir /home/ghostuser`.
 
 ### 3. `bin/dbx-smith-rm` (The Reaper)
 Ensures zero-drift teardowns.
@@ -197,13 +197,13 @@ CREATED_AT=2026-04-21T00:15:00Z
 | Field | Written by | Read by | Purpose |
 | :--- | :--- | :--- | :--- |
 | `NAME` | `spin` | `rm` | Exact match key used by `rm` to target the right container and its associated home dir, alias fragment, and network bridge. |
-| `STRATEGY` | `spin` | `runtime` | Tells `dbx-smith` *how* to enter the box. `ghost` → appends `--user ghostuser --workdir /home/ghostuser`. Other strategies → standard entry. |
+| `STRATEGY` | `spin` | `runtime` | Tells `dbx-smith` *how* to enter the box. Any `ghost*` strategy → appends `--user ghostuser --workdir /home/ghostuser`. Other strategies → standard entry. |
 | `IMAGE` | `spin` | — | Audit trail. Lets you inspect what image a running box was built from without querying Podman. |
 | `CREATED_AT` | `spin` | — | Timestamp for auditing and sorting when you have many boxes. |
 
 ### What breaks without it
 
-- **Runtime (`dbx-smith`)**: Falls back to a heuristic — checks `/etc/passwd` inside the container for `ghostuser`. If the registry is missing, `ghost` boxes may be entered as the wrong user.
+- **Runtime (`dbx-smith`)**: Falls back to a heuristic — checks `/etc/passwd` inside the container for `ghostuser`. If the registry is missing, ghost boxes may be entered as the wrong user.
 - **Teardown (`dbx-smith-rm`)**: Cannot know whether the box had an isolated home directory (`~/boxes/<name>`) or a dedicated network bridge (`dbx-net-<name>`). Those artifacts will be **orphaned** on the filesystem.
 - **Duplicate guard (`spin`)**: `spin` reads the registry to prevent re-provisioning a box that already exists by name.
 

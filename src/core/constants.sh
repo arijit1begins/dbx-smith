@@ -2,8 +2,19 @@
 # shellcheck shell=bash
 # shellcheck disable=SC2034
 # Constants and Paths for DbxSmith
-[[ -z "${VERSION:-}" ]] && readonly VERSION="1.4.4"
-[[ -z "${HOME_BASE:-}" ]] && readonly HOME_BASE="${HOME}/boxes"
-[[ -z "${CONFIG_DIR:-}" ]] && readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
-[[ -z "${ALIAS_DIR:-}" ]] && readonly ALIAS_DIR="${CONFIG_DIR}/aliases.d"
-[[ -z "${REG_DIR:-}" ]] && readonly REG_DIR="${CONFIG_DIR}/registry"
+
+if [[ -z "${VERSION:-}" ]]; then
+    readonly VERSION="1.4.5"
+fi
+if [[ -z "${HOME_BASE:-}" ]]; then
+    readonly HOME_BASE="${HOME}/boxes"
+fi
+if [[ -z "${CONFIG_DIR:-}" ]]; then
+    readonly CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/dbx-smith"
+fi
+if [[ -z "${ALIAS_DIR:-}" ]]; then
+    readonly ALIAS_DIR="${CONFIG_DIR}/aliases.d"
+fi
+if [[ -z "${REG_DIR:-}" ]]; then
+    readonly REG_DIR="${CONFIG_DIR}/registry"
+fi

@@ -29,8 +29,13 @@ strategy_ghost_airgapped_get_flags() {
     local airgap_hook
     airgap_hook=$(_get_ghost_airgap_sever_hook)
 
+    local extra_args=()
+    if [[ "${SKIP_BOOTSTRAP:-false}" == "true" ]]; then
+        extra_args+=(--unshare-all --additional-flags "--network none")
+    fi
+
     # shellcheck disable=SC2034
-    DBX_FLAGS=(--name "$name" --image "$image" --hostname ghost-shell --home "$HOME_BASE/$name" --unshare-all --init-hooks "$su_install_hook; $isolate_hook; $airgap_hook; $init_hook")
+    DBX_FLAGS=(--name "$name" --image "$image" --hostname ghost-shell --home "$HOME_BASE/$name" "${extra_args[@]}" --init-hooks "$su_install_hook; $isolate_hook; $airgap_hook; $init_hook")
 }
 
 strategy_ghost_airgapped_finalize() {
