@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/arijit1begins/dbx-smith/compare/v1.4.6...v1.5.0) (2026-05-19)
+
+
+### Features
+
+* add help options to dbx-smith entry point and update docs ([210faa3](https://github.com/arijit1begins/dbx-smith/commit/210faa33fe5c878f41323b4d70089ba2ae4c11fc))
+* configure dynamic base reference for paths-filter and add support for skip-branch-ci commit flag ([40cebc9](https://github.com/arijit1begins/dbx-smith/commit/40cebc96b3c9eee9f1d7097163e2808a4293df15))
+
 ### [1.4.6](https://github.com/arijit1begins/dbx-smith/compare/v1.4.5...v1.4.6) (2026-05-19)
 
 
