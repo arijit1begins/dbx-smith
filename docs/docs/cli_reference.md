@@ -37,6 +37,8 @@ dbx-smith <subcommand | box_name> [additional_args...]
   Delegates directly to `dbx-smith-list` to print a cleanly formatted table of all containers.
 * **`dash`**  
   Launches the interactive, zero-flicker TUI Dashboard (`dbx-smith-dash`).
+* **`-h, --help`**  
+  Displays the command syntax, subcommands, and options.
 * **`<box_name>`**  
   Enters the specified box name. The wrapper automatically queries `~/.config/dbx-smith/registry/` to determine the active strategy.
   * For **Ghost** strategies: Automatically injects `--user ghostuser --workdir /home/ghostuser`.

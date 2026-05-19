@@ -25,6 +25,16 @@ else
 fi
 
 dbx-smith() {
+    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+        echo "usage: dbx-smith <box_name|list|dash> [args...]"
+        echo ""
+        echo "Commands:"
+        echo "  list        List all Distrobox containers with their DbxSmith strategies"
+        echo "  dash        Launch interactive TUI dashboard"
+        echo "  <box_name>  Enter the specified container"
+        return 0
+    fi
+
     if [[ "$1" == "list" ]]; then
         dbx-smith-list "${@:2}"
         return $?

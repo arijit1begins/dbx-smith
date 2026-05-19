@@ -49,6 +49,13 @@ Forge and manage your containers instantly:
 dbx-smith dash
 ```
 
+### 3. CLI Usage & Help
+Display help info or list your active environments directly:
+```bash
+dbx-smith --help
+dbx-smith list
+```
+
 ---
 
 ## 🕹️ TUI Dashboard Controls
