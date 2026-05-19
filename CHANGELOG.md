@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.4.6](https://github.com/arijit1begins/dbx-smith/compare/v1.4.5...v1.4.6) (2026-05-19)
+
+
+### Bug Fixes
+
+* **ghost:** resolve HOME redirection, crun chdir, and prompt compatibility ([927d126](https://github.com/arijit1begins/dbx-smith/commit/927d1262892d5e057d1767b78bb173efe6502260))
+
 ### [1.4.5](https://github.com/arijit1begins/dbx-smith/compare/v1.4.4...v1.4.5) (2026-05-19)
 
 
