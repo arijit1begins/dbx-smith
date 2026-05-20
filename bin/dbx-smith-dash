@@ -70,7 +70,7 @@ provision_container() {
     mkfifo "$log_pipe"
     
     # Run the spin command and pipe output to our fifo
-    dbx-smith-spin "$strategy" "$name" "$image" "$alias" > "$log_pipe" 2>&1 &
+    dbx-smith-spin "$strategy" "$name" "$image" "$alias" > "$log_pipe" 2>&1 3>&- &
     TASK_PID=$!
     
     # Non-blocking read from pipe
@@ -491,7 +491,7 @@ handle_input() {
                         log_pipe=$(mktemp -u)
                         mkfifo "$log_pipe"
                         
-                        dbx-smith-rm "$target" > "$log_pipe" 2>&1 &
+                        dbx-smith-rm "$target" > "$log_pipe" 2>&1 3>&- &
                         TASK_PID=$!
                         
                         exec 4< "$log_pipe"
