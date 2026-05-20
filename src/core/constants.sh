@@ -4,7 +4,7 @@
 # Constants and Paths for DbxSmith
 
 if [[ -z "${VERSION:-}" ]]; then
-    readonly VERSION="1.5.0"
+    readonly VERSION="1.5.1"
 fi
 if [[ -z "${HOME_BASE:-}" ]]; then
     readonly HOME_BASE="${HOME}/boxes"
