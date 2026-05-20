@@ -79,7 +79,7 @@ Launch the interactive dashboard with `dbx-smith dash` and navigate like a pro:
 Clean up all active containers, ephemeral home directories, and custom virtual network bridges with a single atomic command:
 
 ```bash
-dbx-smith spin --remove-all
+dbx-smith-rm -a --purge
 ```
 
 ![Bulk Removal Showcase](docs/static/img/rm_all_capture.png)

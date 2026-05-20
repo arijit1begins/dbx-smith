@@ -1,7 +1,5 @@
-<!-- markdownlint-disable MD010 MD036 -->
 # NAME
 
-	dbx-smith spin
 	dbx-smith-spin
 
 # DESCRIPTION
