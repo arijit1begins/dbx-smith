@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # shellcheck source=src/strategies/ghost.sh
+# shellcheck disable=SC1091
 source "${SRC_DIR}/strategies/ghost.sh"
 
 strategy_ghost_isolated_net_get_flags() {
@@ -21,7 +22,7 @@ strategy_ghost_isolated_net_get_flags() {
     isolate_hook="umount -l /home/$USER 2>/dev/null || true; mount -t tmpfs tmpfs /home; mount -t tmpfs tmpfs /run/host/home 2>/dev/null || true; mkdir -p /home/ghostuser; chown ghostuser:ghostuser /home/ghostuser 2>/dev/null || true"
     
     # shellcheck disable=SC2034
-    DBX_FLAGS=(--name "$name" --image "$image" --hostname ghost-shell --unshare-all --additional-flags "--network dbx-net-${name}" --init-hooks "$su_install_hook; $isolate_hook; $init_hook")
+    DBX_FLAGS=(--name "$name" --image "$image" --hostname ghost-shell --home "$HOME_BASE/$name" --unshare-all --additional-flags "--network dbx-net-${name}" --init-hooks "$su_install_hook; $isolate_hook; $init_hook")
 }
 
 strategy_ghost_isolated_net_finalize() {
@@ -29,6 +30,7 @@ strategy_ghost_isolated_net_finalize() {
     name="$1" strategy="$2" image="$3" usr_alias="$4" usr_bind="$5"
 
     echo "Ghost-isolated-net strategy detected. Bootstrapping container..."
+    mkdir -p "$HOME_BASE/$name"
     if [[ "${SKIP_BOOTSTRAP:-false}" != "true" ]]; then
         distrobox enter --no-workdir --additional-flags "--workdir /" "$name" -- true </dev/null || true
     else
