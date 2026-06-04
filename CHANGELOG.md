@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.5.3](https://github.com/arijit1begins/dbx-smith/compare/v1.5.2...v1.5.3) (2026-06-04)
+
+
+### Bug Fixes
+
+* **strategy:** ensure host home directory is created and mounted for ghost-isolated-net ([5275a4a](https://github.com/arijit1begins/dbx-smith/commit/5275a4aa95181cb415a8693197df706bea198ed2))
+
 ### [1.5.2](https://github.com/arijit1begins/dbx-smith/compare/v1.5.1...v1.5.2) (2026-05-20)
 
 
