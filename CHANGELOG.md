@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.5.4](https://github.com/arijit1begins/dbx-smith/compare/v1.5.3...v1.5.4) (2026-06-05)
+
+
+### Bug Fixes
+
+* **strategy:** properly bind mount host directory into ghostuser home ([d45f258](https://github.com/arijit1begins/dbx-smith/commit/d45f2583bcdea2f02be034c1ecfd8f3726c4143b))
+
 ### [1.5.3](https://github.com/arijit1begins/dbx-smith/compare/v1.5.2...v1.5.3) (2026-06-04)
 
 
