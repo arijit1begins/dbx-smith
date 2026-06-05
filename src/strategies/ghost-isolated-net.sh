@@ -19,7 +19,7 @@ strategy_ghost_isolated_net_get_flags() {
     su_install_hook="echo '$(printf '%s' "$_su_install_script" | base64 | tr -d '\n')' | base64 -d | bash"
 
     local isolate_hook
-    isolate_hook="umount -l /home/$USER 2>/dev/null || true; mount -t tmpfs tmpfs /home; mount -t tmpfs tmpfs /run/host/home 2>/dev/null || true; mkdir -p /home/ghostuser; chown ghostuser:ghostuser /home/ghostuser 2>/dev/null || true"
+    isolate_hook="mkdir -p /tmp/save_home && mount --bind \"$HOME_BASE/$name\" /tmp/save_home && umount -l /home/$USER 2>/dev/null || true; mount -t tmpfs tmpfs /home; mount -t tmpfs tmpfs /run/host/home 2>/dev/null || true; mkdir -p /home/ghostuser; mount --bind /tmp/save_home /home/ghostuser && umount /tmp/save_home; chown ghostuser:ghostuser /home/ghostuser 2>/dev/null || true"
     
     # shellcheck disable=SC2034
     DBX_FLAGS=(--name "$name" --image "$image" --hostname ghost-shell --home "$HOME_BASE/$name" --unshare-all --additional-flags "--network dbx-net-${name}" --init-hooks "$su_install_hook; $isolate_hook; $init_hook")
