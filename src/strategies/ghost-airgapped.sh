@@ -5,7 +5,7 @@ source "${SRC_DIR}/strategies/ghost.sh"
 
 # Internal helpers for airgap hooks
 _get_ghost_airgap_isolate_hook() {
-    printf 'umount -l /home/%s 2>/dev/null || true; mount -t tmpfs tmpfs /home; mount -t tmpfs tmpfs /run/host/home 2>/dev/null || true; mkdir -p /home/ghostuser %s; chown ghostuser:ghostuser /home/ghostuser 2>/dev/null || true' "$USER" "$HOME_BASE/${1:-}"
+    printf 'mkdir -p /tmp/save_home && mount --bind "%s" /tmp/save_home && umount -l /home/%s 2>/dev/null || true; mount -t tmpfs tmpfs /home; mount -t tmpfs tmpfs /run/host/home 2>/dev/null || true; mkdir -p /home/ghostuser; mount --bind /tmp/save_home /home/ghostuser && umount /tmp/save_home; chown ghostuser:ghostuser /home/ghostuser 2>/dev/null || true' "$HOME_BASE/${1:-}" "$USER"
 }
 
 _get_ghost_airgap_sever_hook() {
